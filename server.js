@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 
 const authRouter = require('./routers/authRouter');
+const ieltsRouter = require('./routers/ieltsRouter');
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, "index.html"));
@@ -22,6 +23,7 @@ mongoose.connect(process.env.MONGO_URI).then(() => {
 
 app.use(express.json());
 app.use('/api/auth', authRouter);
+app.use('/api/ielts', ieltsRouter);
 
 app.listen(process.env.PORT, () => {
     console.log(`Server is running on port ${process.env.PORT}`);
