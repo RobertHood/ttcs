@@ -15,6 +15,7 @@ const englishRouter = require('./routers/engRouter');
 //     res.sendFile(path.join(__dirname, "index.html"));
 // });
 
+
 mongoose.connect(process.env.MONGO_URI).then(() => {
     console.log('MongoDB connected successfully!');
 }
@@ -24,6 +25,10 @@ mongoose.connect(process.env.MONGO_URI).then(() => {
 );
 
 app.use(express.json());
+app.use(cors());
+app.use(helmet());
+app.use(cookieParser());
+
 app.use('/api/auth', authRouter);
 app.use('/api/ielts', ieltsRouter);
 app.use('/api/english',englishRouter);

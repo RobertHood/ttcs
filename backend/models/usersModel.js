@@ -42,6 +42,10 @@ const userSchema = mongoose.Schema({
         type: String,
         select: false
     },
+    userXP:{
+        type: Number,
+        default: 0
+    }
 },{
     timestamps: true
 });

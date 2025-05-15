@@ -16,11 +16,32 @@ export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Xử lý logic đăng nhập ở đây
-    navigate('/registercourse');
+    try{
+      
+      const response = await fetch('http://localhost:8001/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setError('Login successful! Redirecting');
+        navigate("/");
+      }else{
+        setError(data.message || "Login failed");
+        return;
+      }
+   } catch (error) {
+      console.error('Error:', error);
+    }
+    
   };
 
   return (
@@ -52,10 +73,19 @@ export default function Login() {
             >
               Welcome Back!
             </Typography>
-
+            <Typography
+              variant="body2"
+              id="error-message"
+              color={error ? 'primary' : 'error'}
+              display={error ? 'block' : 'none'}
+              sx={{minHeight: 24, mb: 1}}
+            >
+              {error}
+            </Typography>
             <form onSubmit={handleSubmit}>
               <TextField
                 fullWidth
+                id="email"
                 label="Email"
                 variant="outlined"
                 margin="normal"
@@ -74,6 +104,7 @@ export default function Login() {
               <TextField
                 fullWidth
                 label="Password"
+                id="password"
                 type="password"
                 variant="outlined"
                 margin="normal"
