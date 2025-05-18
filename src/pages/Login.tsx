@@ -33,7 +33,7 @@ export default function Login() {
       const data = await response.json();
       if (response.ok) {
         setError('Login successful! Redirecting');
-        navigate("/");
+        navigate("/registercourse");
       }else{
         setError(data.message || "Login failed");
         return;

@@ -86,3 +86,12 @@ exports.createPostSchema = Joi.object({
 	description: Joi.string().min(3).max(600).required(),
 	userID: Joi.string().required(),
 });
+
+exports.createCourseSchema = Joi.object({
+    headerImage: Joi.string().required(),
+    title: Joi.string().min(3).max(60).required(),
+    description: Joi.string().min(3).max(600).required(),
+    category: Joi.string().required(),
+    instructor: Joi.string().required(),
+    duration: Joi.number().required(),
+});

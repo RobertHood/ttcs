@@ -47,6 +47,7 @@ import {
       duration: '10 Weeks',
       level: 'Advanced',
     },
+    
   ];
   
   export default function Course() {

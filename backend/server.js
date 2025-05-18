@@ -36,6 +36,13 @@ app.use('/avatars', express.static(path.join(__dirname, 'public/avatars')));
 
 app.use(helmet());
 app.use(cookieParser());
+const corsOptions = {
+  origin: '*',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+};
+
+app.use('/uploads', cors(corsOptions), express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api/auth', authRouter);
 app.use('/api/ielts', ieltsRouter);

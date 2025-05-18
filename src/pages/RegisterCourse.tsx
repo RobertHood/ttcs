@@ -12,43 +12,35 @@ import {
   import Header from '../components/header';
   import Footer from '../components/footer';
   import { useNavigate } from 'react-router-dom';
-  
-  const allCourses = [
-    {
-      id: 1,
-      title: 'Beginner English Course',
-      description: 'Master the basics of English with interactive lessons and daily practice.',
-      image: 'https://tinyurl.com/y3repvhz',
-      duration: '6 Weeks',
-      level: 'Beginner',
-    },
-    {
-      id: 2,
-      title: 'Business English',
-      description: 'Professional communication skills for the workplace.',
-      image: 'https://tinyurl.com/y3repvhz',
-      duration: '8 Weeks',
-      level: 'Intermediate',
-    },
-    {
-      id: 3,
-      title: 'English Conversation Mastery',
-      description: 'Improve your speaking and listening skills with real-life scenarios.',
-      image: 'https://tinyurl.com/y3repvhz',
-      duration: '10 Weeks',
-      level: 'Advanced',
-    },
-  ];
-  
-  const levelColors = {
-    Beginner: 'info',
-    Intermediate: 'secondary',
-    Advanced: 'error',
-  } as const;
+  import React, {useEffect, useState} from 'react';
+
+  const levelColors =
+    "secondary"
+  ;
   
   export default function RegisterCourse() {
     const theme = useTheme();
     const navigate = useNavigate();
+     const [allCourses, setAllCourses] = useState<any[]>([]);
+    useEffect(() => {
+      const fetchCourses = async () => {
+        try {
+          const response = await fetch("http://localhost:8001/api/english/all-courses", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json"
+            }
+          });
+          const data = await response.json();
+          if (response.ok && data.data) {
+            setAllCourses(data.data);
+          }
+        } catch (error) {
+          console.log(error);
+        }
+      };
+      fetchCourses();
+    }, []);
   
     const handleRegister = (course: typeof allCourses[0]) => {
       const registered = JSON.parse(localStorage.getItem('registeredCourses') || '[]');
@@ -73,30 +65,31 @@ import {
           }}
         >
           <Typography variant="h4" gutterBottom textAlign="center" fontWeight={600}>
-            Đăng ký khóa học mới
+            Các khóa học
           </Typography>
           <Grid container spacing={4}>
             {allCourses.map((course) => (
-              <Grid item xs={12} sm={6} md={4} key={course.id}>
-                <Card sx={{ borderRadius: 4, boxShadow: 6 }}>
+              <Grid item xs={12} sm={6} md={4} key={course.id} sx={{ height : '100%'}}>
+                <Card sx={{ borderRadius: 4, boxShadow: 6, height: '100%', width: 450, display: 'flex', flexDirection: 'column' }}>
                   <CardMedia
                     component="img"
                     height="160"
-                    image={course.image}
+                    image={`http://localhost:8001/${course.headerImage}`}
                     alt={course.title}
+                    crossOrigin='anonymous'
                   />
-                  <CardContent>
+                  <CardContent sx={{flexGrow : 1}}>
                     <Typography variant="h6" gutterBottom>{course.title}</Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                       {course.description}
                     </Typography>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                       <Chip
-                        label={course.level}
-                        color={levelColors[course.level as keyof typeof levelColors]}
+                        label={course.level} 
+                        color="secondary"
                         size="small"
                       />
-                      <Typography variant="caption">{course.duration}</Typography>
+                      <Typography variant="caption">{course.duration} hours</Typography>
                     </Box>
                     <Button
                       fullWidth

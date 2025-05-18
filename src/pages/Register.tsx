@@ -25,7 +25,7 @@ export default function Signup() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Xử lý logic đăng ký ở đây
+  
     navigate('/dashboard');
   };
 
