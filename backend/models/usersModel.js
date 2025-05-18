@@ -22,6 +22,36 @@ const userSchema = mongoose.Schema({
         },
         trim: true
     },
+    level: {
+        type: String,
+        default: 'Beginner',
+        trim: true
+    },
+    language: {
+        type: String,
+        default: 'English',
+        trim: true
+    },
+    avatarUrl: {
+        type: String,
+        default: '',
+        trim: true
+    },
+    strengths: {
+        pronunciation: { type: Number, default: 0 },
+        grammar: { type: Number, default: 0 },
+        vocabulary: { type: Number, default: 0 },
+        fluency: { type: Number, default: 0 }
+    },
+    progress: {
+        type: [
+            {
+                month: String,
+                progress: Number
+            }
+        ],
+        default: []
+    },
     verified:{
         type: Boolean,
         default: false

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import {
   Avatar,
   Box,
@@ -34,20 +35,6 @@ import {
 import Header from '../components/header';
 import Footer from '../components/footer';
 
-const strengthData = [
-  { skill: 'Phát âm', value: 85 },
-  { skill: 'Ngữ pháp', value: 70 },
-  { skill: 'Từ vựng', value: 90 },
-  { skill: 'Trôi chảy', value: 65 },
-];
-
-const progressData = [
-  { month: 'Tháng 1', progress: 45 },
-  { month: 'Tháng 2', progress: 65 },
-  { month: 'Tháng 3', progress: 80 },
-  { month: 'Tháng 4', progress: 92 },
-];
-
 const courseSuggestions = [
   'Ngữ pháp cơ bản',
   'Giao tiếp hàng ngày',
@@ -57,14 +44,75 @@ const courseSuggestions = [
 
 export default function Profile() {
   const theme = useTheme();
-
   const [editOpen, setEditOpen] = useState(false);
-  const [userData, setUserData] = useState({
-    name: 'John Doe',
-    level: 'Advanced',
+  const defaultUserData = {
+    profileName: '',
+    email: '',
+    level: 'Beginner',
     language: 'English',
-    avatar: '/path-to-avatar.jpg',
-  });
+    avatarUrl: '',
+    userXP: 0,
+    strengths: {
+      pronunciation: 0,
+      grammar: 0,
+      vocabulary: 0,
+      fluency: 0
+    },
+    progress: []
+  };
+  const [userData, setUserData] = useState(defaultUserData);
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      const response = await fetch('http://localhost:8001/api/auth/profile', {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (response.ok && data.data) {
+        setUserData({ ...defaultUserData, ...data.data, strengths: { ...defaultUserData.strengths, ...(data.data.strengths || {}) }, progress: data.data.progress || [] });
+      } else {
+        setUserData(defaultUserData);
+      }
+    } catch (error) {
+      setUserData(defaultUserData);
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  const handleUpdateProfile = async (updatedData: any) => {
+    try {
+      const response = await fetch('http://localhost:8001/api/auth/profile/update', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(updatedData)
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUserData(data.data);
+        setEditOpen(false);
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
+  };
+
+  // Update strengthData and progressData to use real data
+  const strengthData = [
+    { skill: 'Phát âm', value: userData.strengths.pronunciation },
+    { skill: 'Ngữ pháp', value: userData.strengths.grammar },
+    { skill: 'Từ vựng', value: userData.strengths.vocabulary },
+    { skill: 'Trôi chảy', value: userData.strengths.fluency },
+  ];
+
+  const progressData = userData.progress;
 
   return (
     <>
@@ -83,7 +131,7 @@ export default function Profile() {
                     mb: 2,
                     border: `4px solid ${theme.palette.primary.main}`,
                   }}
-                  src={userData.avatar}
+                  src={userData.avatarUrl}
                 />
                 <Button
                   variant="outlined"
@@ -97,7 +145,7 @@ export default function Profile() {
 
               <Grid item xs={12} md={9}>
                 <Typography variant="h4" sx={{ mb: 1 }}>
-                  {userData.name}
+                  {userData.profileName}
                   <Chip
                     label={`Trình độ: ${userData.level}`}
                     color="primary"
@@ -108,7 +156,7 @@ export default function Profile() {
                 </Typography>
 
                 <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                  <Chip icon={<Star />} label="568 XP" variant="filled" color="warning" />
+                  <Chip icon={<Star />} label={`${userData.userXP} XP`} variant="filled" color="warning" />
                   <Chip icon={<TrendingUp />} label="Top 15%" variant="filled" color="success" />
                   <Chip icon={<Language />} label={`Ngôn ngữ: ${userData.language}`} variant="filled" />
                 </Box>
@@ -224,7 +272,7 @@ export default function Profile() {
           open={editOpen}
           onClose={() => setEditOpen(false)}
           initialData={userData}
-          onSave={(data) => setUserData(data)}
+          onSave={(data) => handleUpdateProfile(data)}
         />
       </Box>
     <Footer />
@@ -232,16 +280,59 @@ export default function Profile() {
   );
 }
 
-// Popup chỉnh sửa
-function EditProfileDialog({ open, onClose, initialData, onSave }) {
-  const [form, setForm] = useState(initialData);
+// Update EditProfileDialog props and types
+interface EditProfileDialogProps {
+  open: boolean;
+  onClose: () => void;
+  initialData: any;
+  onSave: (data: any) => void;
+}
 
-  const handleChange = (field) => (event) => {
+function EditProfileDialog({ open, onClose, initialData, onSave }: EditProfileDialogProps) {
+  const [form, setForm] = useState({ ...initialData });
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setForm({ ...initialData });
+  }, [initialData, open]);
+
+  const handleChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement | { value: unknown }>) => {
     setForm({ ...form, [field]: event.target.value });
   };
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('avatar', file);
+    try {
+      const res = await fetch('http://localhost:8001/api/auth/profile/avatar', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setForm((prev: any) => ({ ...prev, avatarUrl: data.url }));
+      }
+    } catch (err) {
+      // handle error
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSave = () => {
-    onSave(form);
+    onSave({
+      profileName: form.profileName || '',
+      level: form.level || 'Beginner',
+      language: form.language || 'English',
+      avatarUrl: form.avatarUrl || '',
+      strengths: form.strengths || { pronunciation: 0, grammar: 0, vocabulary: 0, fluency: 0 },
+      progress: form.progress || []
+    });
     onClose();
   };
 
@@ -250,10 +341,10 @@ function EditProfileDialog({ open, onClose, initialData, onSave }) {
       <DialogTitle>Chỉnh sửa hồ sơ</DialogTitle>
       <DialogContent dividers>
         <Box sx={{ textAlign: 'center', mb: 2 }}>
-          <Avatar src={form.avatar} sx={{ width: 100, height: 100, mx: 'auto' }} />
-          <Button variant="outlined" component="label" sx={{ mt: 1 }}>
-            Tải ảnh
-            <input type="file" hidden />
+          <Avatar src={form.avatarUrl} sx={{ width: 100, height: 100, mx: 'auto' }} />
+          <Button variant="outlined" component="label" sx={{ mt: 1 }} disabled={uploading}>
+            {uploading ? 'Đang tải...' : 'Tải ảnh'}
+            <input type="file" hidden accept="image/*" onChange={handleAvatarChange} ref={fileInputRef} />
           </Button>
         </Box>
         <Grid container spacing={2}>
@@ -261,8 +352,8 @@ function EditProfileDialog({ open, onClose, initialData, onSave }) {
             <TextField
               fullWidth
               label="Tên người dùng"
-              value={form.name}
-              onChange={handleChange('name')}
+              value={form.profileName}
+              onChange={handleChange('profileName')}
             />
           </Grid>
           <Grid item xs={12}>

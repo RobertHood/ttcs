@@ -25,7 +25,15 @@ mongoose.connect(process.env.MONGO_URI).then(() => {
 );
 
 app.use(express.json());
-app.use(cors());
+// Áp dụng middleware CORS chỉ cho các route API
+app.use('/api', cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}));
+
+// Phục vụ tệp tĩnh (avatar) trước khi áp dụng helmet
+app.use('/avatars', express.static(path.join(__dirname, 'public/avatars')));
+
 app.use(helmet());
 app.use(cookieParser());
 

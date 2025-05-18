@@ -373,3 +373,32 @@ exports.deleteUser = async (req, res) => {
 		console.log(error);
 	}
 };
+
+// LẤY PROFILE USER
+exports.getProfile = async (req, res) => {
+    try {
+        const { userID } = req.user;
+        const user = await User.findById(userID).select('-password -verificationCode -verificationCodeValidation -forgotPasswordCode -forgotPasswordCodeValidation');
+        if (!user) {
+            return res.status(404).json({ status: 'fail', message: 'User not found' });
+        }
+        res.json({ status: 'success', data: user });
+    } catch (error) {
+        res.status(500).json({ status: 'fail', message: 'Server error' });
+    }
+};
+
+// CẬP NHẬT PROFILE USER
+exports.updateProfile = async (req, res) => {
+    try {
+        const { userID } = req.user;
+        const updateFields = req.body;
+        const user = await User.findByIdAndUpdate(userID, updateFields, { new: true, runValidators: true }).select('-password -verificationCode -verificationCodeValidation -forgotPasswordCode -forgotPasswordCodeValidation');
+        if (!user) {
+            return res.status(404).json({ status: 'fail', message: 'User not found' });
+        }
+        res.json({ status: 'success', data: user });
+    } catch (error) {
+        res.status(500).json({ status: 'fail', message: 'Server error' });
+    }
+};
