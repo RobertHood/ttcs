@@ -12,11 +12,7 @@ import {
   import Header from '../components/header';
   import Footer from '../components/footer';
   import { useNavigate } from 'react-router-dom';
-  import React, {useEffect, useState} from 'react';
-
-  const levelColors =
-    "secondary"
-  ;
+  import {useEffect, useState} from 'react';
   
   export default function RegisterCourse() {
     const theme = useTheme();
@@ -85,7 +81,7 @@ import {
                     </Typography>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                       <Chip
-                        label={course.level} 
+                        label={course.category} 
                         color="secondary"
                         size="small"
                       />

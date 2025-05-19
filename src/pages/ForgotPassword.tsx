@@ -19,7 +19,7 @@ export default function ForgotPassword() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Xử lý logic gửi email reset mật khẩu
-    navigate('/login'); // Chuyển hướng sau khi gửi thành công
+    navigate('/login'); 
   };
 
   return (

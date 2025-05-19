@@ -9,7 +9,7 @@ const path = require('path');
 const authRouter = require('./routers/authRouter');
 const ieltsRouter = require('./routers/ieltsRouter');
 const englishRouter = require('./routers/engRouter');
-
+const userRouter = require('./routers/userRouter');
 
 // app.get('/', (req, res) => {
 //     res.sendFile(path.join(__dirname, "index.html"));
@@ -25,13 +25,13 @@ mongoose.connect(process.env.MONGO_URI).then(() => {
 );
 
 app.use(express.json());
-// Áp dụng middleware CORS chỉ cho các route API
+
 app.use('/api', cors({
   origin: 'http://localhost:5173',
   credentials: true
 }));
 
-// Phục vụ tệp tĩnh (avatar) trước khi áp dụng helmet
+
 app.use('/avatars', express.static(path.join(__dirname, 'public/avatars')));
 
 app.use(helmet());
@@ -47,6 +47,7 @@ app.use('/uploads', cors(corsOptions), express.static(path.join(__dirname, 'uplo
 app.use('/api/auth', authRouter);
 app.use('/api/ielts', ieltsRouter);
 app.use('/api/english',englishRouter);
+app.use('/api/user', userRouter);
 
 app.listen(process.env.PORT, () => {
     console.log(`Server is running on port ${process.env.PORT}`);

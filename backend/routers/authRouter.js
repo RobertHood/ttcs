@@ -6,7 +6,6 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 
-// Multer config for avatar upload
 const avatarDir = path.join(__dirname, '../public/avatars');
 if (!fs.existsSync(avatarDir)) fs.mkdirSync(avatarDir, { recursive: true });
 const storage = multer.diskStorage({

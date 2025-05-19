@@ -87,8 +87,9 @@ exports.login = async (req, res) => {
 
         res.cookie('Authorization', 'Bearer ' + token, {
             expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-            httpOnly: process.env.NODE_ENV === 'production' ? true : false,
+            httpOnly: true,
             secure: process.env.NODE_ENV === 'production' ? true : false,
+            sameSite: 'lax',
         }).json({
             status: "success",
             message: "User logged in successfully",
@@ -101,6 +102,15 @@ exports.login = async (req, res) => {
 
 exports.logout = async (req, res) => {
     res.clearCookie('Authorization', {
+        httpOnly: process.env.NODE_ENV === 'production' ? true : false,
+        secure: process.env.NODE_ENV === 'production' ? true : false,
+    }).clearCookie('role',{
+        httpOnly: process.env.NODE_ENV === 'production' ? true : false,
+        secure: process.env.NODE_ENV === 'production' ? true : false,
+    }).clearCookie('createdAt',{
+        httpOnly: process.env.NODE_ENV === 'production' ? true : false,
+        secure: process.env.NODE_ENV === 'production' ? true : false,
+    }).clearCookie('username',{
         httpOnly: process.env.NODE_ENV === 'production' ? true : false,
         secure: process.env.NODE_ENV === 'production' ? true : false,
     }).json({

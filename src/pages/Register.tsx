@@ -16,6 +16,7 @@ import { motion } from 'framer-motion';
 export default function Signup() {
   const theme = useTheme();
   const navigate = useNavigate();
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -23,10 +24,36 @@ export default function Signup() {
     acceptTerms: false
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-  
-    navigate('/dashboard');
+    if (!formData.acceptTerms) {
+    setError("You must agree to the Terms of Service.");
+    return;
+  }
+    if(formData.password !== formData.confirmPassword){
+      setError("Your password are not matching! Check again")
+      return;
+    }
+    const response = await fetch('http://localhost:8001/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type' : 'application/json'
+      },
+      body: JSON.stringify({
+      email: formData.email,
+      password: formData.password,
+    })
+    })
+    const data = await response.json();
+    console.log(data);
+    if (response.ok){
+      setError('Your account has been registered! Redirecting...');
+      navigate('/login')
+    }
+    else{
+      setError(data.message || "Register failed");
+      return;
+    }
   };
 
   return (
@@ -58,7 +85,15 @@ export default function Signup() {
             >
               Start Learning Today!
             </Typography>
-
+            <Typography
+                          variant="body2"
+                          id="error-message"
+                          color={error ? 'primary' : 'error'}
+                          display={error ? 'block' : 'none'}
+                          sx={{minHeight: 24, mb: 1}}
+                        >
+                          {error}
+                        </Typography>
             <form onSubmit={handleSubmit}>
               <TextField
                 fullWidth
