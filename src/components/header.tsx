@@ -97,6 +97,15 @@ export default function Header() {
           <Box sx={{ display: 'flex', gap: 2 }}>
             {isLoggedIn ? (
               <>
+                {user?.role === 'admin' && (
+                    <Button
+                      variant="outlined"
+                      onClick={() => handleNavigation('/admin')}
+                      sx={{ borderRadius: 2 }}
+                    >
+                      Admin Page
+                    </Button>
+                  )}
                 <Button
                   variant="text"
                   startIcon={<AccountCircleIcon />}

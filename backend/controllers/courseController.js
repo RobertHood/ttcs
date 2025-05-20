@@ -42,7 +42,7 @@ exports.getAllCourses = async (req, res) => {
 exports.getCourseById = async (req, res) => {
     try {
         const courseId = req.params.id;
-        const course = await CourseSchema.findById(courseId);
+        const course = await CourseSchema.findById(courseId).populate('category');
         if (!course) {
             return res.status(404).json({ success: false, message: 'Course not found' });
         }
@@ -50,6 +50,7 @@ exports.getCourseById = async (req, res) => {
       } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: 'Server error' });
+    }
 };
 
 
@@ -89,4 +90,3 @@ exports.enrollInCourse = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
-

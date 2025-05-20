@@ -9,7 +9,7 @@ import Course from './pages/Course';
 import ForgotPassword from './pages/ForgotPassword';
 import CourseRegistrationForm from './pages/CourseRegisForm';
 import CourseDetail from './pages/CourseDetail';
-
+import AdminPage from './pages/AdminPage';
 export default function AppRoutes() {
   return (
     <Routes>
@@ -23,6 +23,7 @@ export default function AppRoutes() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/course-regis" element={<CourseRegistrationForm />} />
       <Route path="/course/:id" element={<CourseDetail />} />
+      <Route path="/admin" element={<AdminPage/>} />
     </Routes>
   );
 }
