@@ -20,7 +20,7 @@ export default function Header() {
   useEffect(() => {
   fetch('http://localhost:8001/api/user/me', {
     method: 'GET',
-    credentials: 'include', // This sends cookies!
+    credentials: 'include', 
   })
     .then(res => res.json())
     .then(data => {
@@ -112,7 +112,7 @@ export default function Header() {
                     },
                   }}
                 >
-                  {user?.profileName || 'User Profile'}
+                  {user?.profileName}
                 </Button>
                 <Button
                   variant="outlined"

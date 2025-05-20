@@ -6,6 +6,7 @@ const router = express.Router();
 const path = require('path');
 const multer = require('multer');
 const cors = require('cors');
+const { identifier } = require('../middlewares/identification');
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
   filename: (req, file, cb) => {
@@ -22,6 +23,8 @@ router.get('/search', englishDictionaryController.wordSearch);
 router.get('/all-courses', courseController.getAllCourses);
 router.post('/create-course',upload.single('headerImage'), courseController.createCourse);
 router.get('/course/:id', courseController.getCourseById);
+router.post('/enroll-course', identifier, courseController.enrollInCourse);
+
 
 //category controller
 router.get('/all-categories',  categoryController.getAllCategories);

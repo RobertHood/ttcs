@@ -31,6 +31,21 @@ export default function Home() {
   const theme = useTheme();
   const navigate = useNavigate();
 
+  const handleGetStarted = async () => {
+  try {
+    const res = await fetch('http://localhost:8001/api/user/me', {
+      method: 'GET',
+      credentials: 'include',
+    });
+    if (res.ok) {
+      navigate('/registercourse');
+    } else {
+      navigate('/login');
+    }
+  } catch {
+    navigate('/login');
+  }
+};
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <Header />
@@ -60,7 +75,7 @@ export default function Home() {
             <Button
               variant="contained"
               size="large"
-              onClick={() => navigate('/login')}
+              onClick={handleGetStarted}
               sx={{ px: 4, py: 1.5, fontSize: '1.1rem', borderRadius: 2 }}
             >
               Get Started

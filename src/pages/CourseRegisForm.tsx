@@ -92,7 +92,7 @@ import {
             Đăng Ký Khóa Học
           </Typography>
   
-          <Grid container justifyContent="center">
+          {/* <Grid container justifyContent="center">
             <Grid item xs={12} md={8} lg={6}>
               <Card 
                 sx={{ 
@@ -225,7 +225,8 @@ import {
                 </CardContent>
               </Card>
             </Grid>
-          </Grid>
+          </Grid> */}
+          
         </Box>
         <Footer />
       </>
