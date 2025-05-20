@@ -102,10 +102,17 @@ exports.updateUser = async (req, res) => {
 }
 
 exports.getMe = async (req, res) => {
+    try {
     const token = req.cookies.Authorization?.replace('Bearer ', '');
-    if (!token) return res.status(401).json({ success: false });
-    jwt.verify(token, process.env.TOKEN_SECRET, (err, user) => {
-    if (err) return res.status(401).json({ success: false });
-    res.json({ success: true, user });
-  });
+    if (!token) return res.status(401).json({ success: false, message: 'No token' });
+
+    const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
+    const user = await User.findById(decoded.userID); 
+
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    res.json({ success: true, user }); 
+  } catch (err) {
+    res.status(401).json({ success: false, message: 'Invalid token' });
+  }
 }

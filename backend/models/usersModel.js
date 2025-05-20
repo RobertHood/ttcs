@@ -29,9 +29,8 @@ const userSchema = mongoose.Schema({
         trim: true
     },
     level: {
-        type: String,
-        default: 'Beginner',
-        trim: true
+        type: Number,
+        default: 0
     },
     language: {
         type: String,
@@ -81,7 +80,15 @@ const userSchema = mongoose.Schema({
     userXP:{
         type: Number,
         default: 0
-    }
+    },
+    courseEnrolled: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Course'
+    }],
+    CourseInProgress: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Course'
+    }],
 },{
     timestamps: true
 });

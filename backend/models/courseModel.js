@@ -1,3 +1,4 @@
+const { required } = require('joi');
 const mongoose = require('mongoose');
 
 const courseSchema = mongoose.Schema({
@@ -13,19 +14,27 @@ const courseSchema = mongoose.Schema({
         type: String,
         required: true
     },
-    // category: {
-    //     type: mongoose.Schema.Types.ObjectId,
-    //     ref: 'Category',
-    //     required: true
-    // },
     category: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category',
         required: true
     },
     content: {
         type: String, 
         required: true
     },
+    roadmap: [
+        {
+            title: { type: String, required: true },         
+            description: { type: String },     
+            lessons: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Lesson',
+                required: true
+            }, 
+            order: { type: Number }                       
+        }
+        ],
     instructor: {
         type: String,
         required: true
