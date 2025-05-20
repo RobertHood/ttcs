@@ -35,3 +35,19 @@ exports.getAllCourses = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
+
+exports.getCourseById = async (req, res) => {
+    try {
+        const courseId = req.params.id;
+        const course = await CourseSchema.findById(courseId);
+
+        if (!course) {
+            return res.status(404).json({ success: false, message: 'Course not found' });
+        }
+
+        res.status(200).json({ success: true, data: course });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};

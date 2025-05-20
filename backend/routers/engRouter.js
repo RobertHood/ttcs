@@ -21,6 +21,7 @@ router.get('/search', englishDictionaryController.wordSearch);
 //course controller
 router.get('/all-courses', courseController.getAllCourses);
 router.post('/create-course',upload.single('headerImage'), courseController.createCourse);
+router.get('/course/:id', courseController.getCourseById);
 
 //category controller
 router.get('/all-categories',  categoryController.getAllCategories);

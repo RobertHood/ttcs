@@ -148,7 +148,7 @@ exports.sendVerificationCode = async (req, res) => {
         if(info.accepted[0] === existingUser.email) {
             const hashedCodeValue = hmacProcess(codeValue, process.env.HASHING_KEY);
             existingUser.verificationCode = hashedCodeValue;
-            existingUser.verificationCodeValidation = Date.now() + 10 * 60 * 1000; // 10 minutes
+            existingUser.verificationCodeValidation = Date.now() + 5 * 60 * 1000; // 5 minutes
             await existingUser.save();
             return res.status(200).json({
                 status: "success",
