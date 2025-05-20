@@ -22,7 +22,9 @@ router.get('/search', englishDictionaryController.wordSearch);
 //course controller
 router.get('/all-courses', courseController.getAllCourses);
 router.post('/create-course',upload.single('headerImage'), courseController.createCourse);
+router.get('/course/:id', courseController.getCourseById);
 router.post('/enroll-course', identifier, courseController.enrollInCourse);
+
 
 //category controller
 router.get('/all-categories',  categoryController.getAllCategories);
