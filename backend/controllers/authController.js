@@ -6,6 +6,7 @@ const { acceptCodeSchema } = require("../middlewares/validator");
 const User = require("../models/usersModel");
 const jwt = require("jsonwebtoken");
 const transport = require("../middlewares/sendMail");
+const { populate } = require("dotenv");
 
 
 exports.register = async (req, res) => {
@@ -86,6 +87,16 @@ exports.login = async (req, res) => {
         });
 
         res.cookie('Authorization', 'Bearer ' + token, {
+            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production' ? true : false,
+            sameSite: 'lax',
+        }).cookie('role', existingUser.role, {
+            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production' ? true : false,
+            sameSite: 'lax',
+        }).cookie('profileName', existingUser.profileName, {
             expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production' ? true : false,
@@ -384,11 +395,21 @@ exports.deleteUser = async (req, res) => {
 	}
 };
 
-// LẤY PROFILE USER
+
 exports.getProfile = async (req, res) => {
     try {
         const { userID } = req.user;
-        const user = await User.findById(userID).select('-password -verificationCode -verificationCodeValidation -forgotPasswordCode -forgotPasswordCodeValidation');
+        const user = await User.findById(userID).select('-password -verificationCode -verificationCodeValidation -forgotPasswordCode -forgotPasswordCodeValidation').populate({
+            path: 'courseEnrolled',
+            populate: {
+                path: 'category'
+            }
+        }).populate({
+            path: 'CourseInProgress',
+            populate: {
+                path: 'category'
+            }
+        });
         if (!user) {
             return res.status(404).json({ status: 'fail', message: 'User not found' });
         }
@@ -398,7 +419,6 @@ exports.getProfile = async (req, res) => {
     }
 };
 
-// CẬP NHẬT PROFILE USER
 exports.updateProfile = async (req, res) => {
     try {
         const { userID } = req.user;

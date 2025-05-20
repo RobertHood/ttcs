@@ -34,6 +34,9 @@ import {
 } from 'recharts';
 import Header from '../components/header';
 import Footer from '../components/footer';
+import CalendarHeatmap from 'react-calendar-heatmap'
+import 'react-calendar-heatmap/dist/styles.css';
+
 
 const courseSuggestions = [
   'Ngữ pháp cơ bản',
@@ -41,7 +44,6 @@ const courseSuggestions = [
   'Tiếng Anh thương mại',
   'Viết học thuật',
 ];
-
 export default function Profile() {
   const theme = useTheme();
   const [editOpen, setEditOpen] = useState(false);
@@ -60,8 +62,13 @@ export default function Profile() {
     },
     progress: []
   };
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [CourseInProgress, setCourseInProgress] = useState([]);
   const [userData, setUserData] = useState(defaultUserData);
-
+  const level = Math.floor(userData.userXP / 100) + 1;
+  const xpForCurrentLevel = (level - 1) * 100;
+  const xpForNextLevel = level * 100;
+  const progressPercent = ((userData.userXP - xpForCurrentLevel) / (xpForNextLevel - xpForCurrentLevel)) * 100;
   useEffect(() => {
     fetchUserProfile();
   }, []);
@@ -74,8 +81,12 @@ export default function Profile() {
       const data = await response.json();
       if (response.ok && data.data) {
         setUserData({ ...defaultUserData, ...data.data, strengths: { ...defaultUserData.strengths, ...(data.data.strengths || {}) }, progress: data.data.progress || [] });
+        setEnrolledCourses(data.data.courseEnrolled || []);
+        setCourseInProgress(data.data.CourseInProgress || []);
       } else {
         setUserData(defaultUserData);
+        setEnrolledCourses([]);
+        setCourseInProgress([]);
       }
     } catch (error) {
       setUserData(defaultUserData);
@@ -147,7 +158,7 @@ export default function Profile() {
                 <Typography variant="h4" sx={{ mb: 1 }}>
                   {userData.profileName}
                   <Chip
-                    label={`Trình độ: ${userData.level}`}
+                    label={`Level: ${level}`}
                     color="primary"
                     variant="outlined"
                     size="small"
@@ -157,13 +168,12 @@ export default function Profile() {
 
                 <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                   <Chip icon={<Star />} label={`${userData.userXP} XP`} variant="filled" color="warning" />
-                  <Chip icon={<TrendingUp />} label="Top 15%" variant="filled" color="success" />
                   <Chip icon={<Language />} label={`Ngôn ngữ: ${userData.language}`} variant="filled" />
                 </Box>
 
                 <LinearProgress
                   variant="determinate"
-                  value={75}
+                  value={progressPercent}
                   sx={{
                     height: 12,
                     borderRadius: 6,
@@ -172,32 +182,30 @@ export default function Profile() {
                   }}
                 />
                 <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-                  Đã hoàn thành 75% mục tiêu tháng
+                  {xpForNextLevel - xpForCurrentLevel} XP till next level!
                 </Typography>
               </Grid>
             </Grid>
           </Card>
 
           {/* Biểu đồ chiếm toàn bộ màn hình */}
-          <Grid container spacing={4}>
+          <Grid container spacing={2}>
             <Grid item xs={12}>
               <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold' }}>
                 Biểu đồ tiến trình học tập
               </Typography>
               <Card sx={{ p: 2 }}>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={progressData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line
-                      type="monotone"
-                      dataKey="progress"
-                      stroke={theme.palette.secondary.main}
-                      strokeWidth={2}
-                    />
-                  </LineChart>
+                <ResponsiveContainer width="1120px" height="100%">
+                  <CalendarHeatmap
+                  startDate={new Date('2016-01-01')}
+                  endDate={new Date('2016-12-31')}
+                  values={[
+                    { date: '2016-01-01', count: 12 },
+                    { date: '2016-01-22', count: 122 },
+                    { date: '2016-01-30', count: 38 },
+                    
+                  ]}
+                />
                 </ResponsiveContainer>
               </Card>
             </Grid>
@@ -207,7 +215,7 @@ export default function Profile() {
                 Phân tích kỹ năng bởi AI
               </Typography>
               <Card sx={{ p: 2 }}>
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={300} minWidth={500}>
                   <RadarChart data={strengthData}>
                     <PolarGrid />
                     <PolarAngleAxis dataKey="skill" />
@@ -226,45 +234,63 @@ export default function Profile() {
           {/* Đề xuất khóa học */}
           <Box sx={{ mt: 5 }}>
             <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold' }}>
-              Lộ trình học đề xuất
+                Các khóa học đã hoàn thành
             </Typography>
             <Grid container spacing={2}>
-              {courseSuggestions.map((course, index) => (
-                <Grid item xs={12} sm={6} md={3} key={course}>
-                  <Card
-                    sx={{
-                      p: 2,
-                      bgcolor: index === 1 ? 'primary.light' : 'background.paper',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      '&:after': index === 1
-                        ? {
-                            content: '""',
-                            position: 'absolute',
-                            right: -20,
-                            top: -20,
-                            width: 40,
-                            height: 40,
-                            bgcolor: 'primary.main',
-                            borderRadius: '50%',
-                          }
-                        : {},
-                    }}
-                  >
-                    <Typography variant="body1">{course}</Typography>
-                    {index === 1 && (
-                      <Chip
-                        label="Đang học"
-                        color="primary"
-                        size="small"
-                        sx={{ position: 'absolute', top: 8, right: 8 }}
-                      />
-                    )}
-                  </Card>
+                  {enrolledCourses.length === 0 ? (
+                    <Grid item xs={12}>
+                      <Typography variant="body1">Bạn chưa hoàn thành khóa học nào.</Typography>
+                    </Grid>
+                  ) : (
+                    enrolledCourses.map((course: any) => (
+                      <Grid item xs={12} key={course._id}>
+                        <Card sx={{ p: 2, position: 'relative', overflow: 'hidden', width: '100%'}}>
+                          <Typography variant="body1" fontWeight={600}>{course.title}</Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                            {course.description}
+                          </Typography>
+                          <Chip
+                            label={course.category?.name || ''}
+                            color="secondary"
+                            size="small"
+                            sx={{ position: 'absolute', top: 8, right: 8 }}
+                          />
+                        </Card>
+                      </Grid>
+                    ))
+                  )}
                 </Grid>
-              ))}
-            </Grid>
-          </Box>
+              </Box>
+
+              <Box sx={{ mt: 5 }}>
+            <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold' }}>
+                Các khóa học đang tham gia
+            </Typography>
+            <Grid container spacing={2}>
+                  {CourseInProgress.length === 0 ? (
+                    <Grid item xs={12}>
+                      <Typography variant="body1">Bạn chưa tham gia khóa học nào.</Typography>
+                    </Grid>
+                  ) : (
+                    CourseInProgress.map((course: any) => (
+                      <Grid item xs={12} key={course._id}>
+                        <Card sx={{ p: 2, position: 'relative', overflow: 'hidden', width: '100%'}}>
+                          <Typography variant="body1" fontWeight={600}>{course.title}</Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                            {course.description}
+                          </Typography>
+                          <Chip
+                            label={course.category?.name || ''}
+                            color="secondary"
+                            size="small"
+                            sx={{ position: 'absolute', top: 8, right: 8 }}
+                          />
+                        </Card>
+                      </Grid>
+                    ))
+                  )}
+                </Grid>
+              </Box>
         </Container>
 
         {/* Popup chỉnh sửa hồ sơ */}
@@ -334,6 +360,7 @@ function EditProfileDialog({ open, onClose, initialData, onSave }: EditProfileDi
       progress: form.progress || []
     });
     onClose();
+    window.location.reload();
   };
 
   return (
@@ -355,19 +382,6 @@ function EditProfileDialog({ open, onClose, initialData, onSave }: EditProfileDi
               value={form.profileName}
               onChange={handleChange('profileName')}
             />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              select
-              fullWidth
-              label="Trình độ"
-              value={form.level}
-              onChange={handleChange('level')}
-            >
-              <MenuItem value="Beginner">Mới bắt đầu</MenuItem>
-              <MenuItem value="Intermediate">Trung cấp</MenuItem>
-              <MenuItem value="Advanced">Nâng cao</MenuItem>
-            </TextField>
           </Grid>
           <Grid item xs={12}>
             <TextField
