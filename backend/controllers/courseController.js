@@ -1,18 +1,31 @@
 const CourseSchema = require('../models/courseModel');
 const Category = require('../models/categoryModel');
+const mongoose = require('mongoose');
 
 exports.createCourse = async (req, res) => {
-    const { title, description, categoryName, instructor, duration, content } = req.body;
-    const headerImage = req.file ? req.file.path : null;
+    const { title, description, categoryName, category, instructor, duration, content } = req.body;
+    const headerImage = req.file ? req.file.path : req.body.headerImage || null;
+    
     try {
-        const categoryDoc = await Category.findOne({name: categoryName});
+        let categoryDoc;
+        
+        // Check if we have a category ID
+        if (category && mongoose.Types.ObjectId.isValid(category)) {
+            categoryDoc = await Category.findById(category);
+        } 
+        // Otherwise try to find by name
+        else if (categoryName) {
+            categoryDoc = await Category.findOne({name: categoryName});
+        }
+        
         if (!categoryDoc) {
             return res.status(400).json({ success: false, message: 'Category not found' });
         }
+        
         const newCourse = new CourseSchema({
             title,
             description,
-            category: categoryDoc.name,
+            category: categoryDoc._id,
             instructor,
             duration, 
             content,
@@ -39,8 +52,8 @@ exports.getAllCourses = async (req, res) => {
 
 exports.updateCourse = async (req, res) => {
     const { id } = req.params;
-    const { title, description, categoryName, instructor, duration, content } = req.body;
-    const headerImage = req.file ? req.file.path : undefined;
+    const { title, description, categoryName, category, instructor, duration, content } = req.body;
+    const headerImage = req.file ? req.file.path : req.body.headerImage || undefined;
     
     try {
         let updateData = {
@@ -52,12 +65,21 @@ exports.updateCourse = async (req, res) => {
             updatedAt: Date.now()
         };
         
-        if (categoryName) {
+        // Check if we have a category ID
+        if (category && mongoose.Types.ObjectId.isValid(category)) {
+            const categoryDoc = await Category.findById(category);
+            if (!categoryDoc) {
+                return res.status(400).json({ success: false, message: 'Category not found' });
+            }
+            updateData.category = categoryDoc._id;
+        } 
+        // Otherwise try to find by name
+        else if (categoryName) {
             const categoryDoc = await Category.findOne({name: categoryName});
             if (!categoryDoc) {
                 return res.status(400).json({ success: false, message: 'Category not found' });
             }
-            updateData.category = categoryDoc.name;
+            updateData.category = categoryDoc._id;
         }
         
         if (headerImage) {

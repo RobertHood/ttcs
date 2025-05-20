@@ -13,6 +13,7 @@ exports.verifyUser = (req, res, next) => {
     try{
         const userToken = token.split(' ')[1];
         const jwtVerified = jwt.verify(userToken, process.env.TOKEN_SECRET);
+        console.log('Decoded token:', jwtVerified);
         if(jwtVerified){
             req.user = jwtVerified;
             next();
@@ -31,7 +32,9 @@ exports.verifyAdmin = (req, res, next) => {
         return res.status(403).json({ success: false, message: 'User not authenticated' });
     }
     
-    if (req.user.role !== 'admin') {
+    console.log('User role:', req.user.role);
+    
+    if (!req.user.role || req.user.role.toLowerCase() !== 'admin') {
         return res.status(403).json({ success: false, message: 'Admin access required' });
     }
     
