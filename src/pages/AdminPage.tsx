@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AppBar,
@@ -33,6 +33,10 @@ import {
   Typography,
   CircularProgress,
   useTheme,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   Menu,
@@ -46,8 +50,10 @@ import {
   Edit,
   Delete,
   Add,
+  Upload,
 } from '@mui/icons-material';
 import { categoryService, type Category } from '../config/categoryService';
+import { courseService, type Course } from '../config/courseService';
 
 const drawerWidth = 240;
 
@@ -264,42 +270,406 @@ const UsersView = () => (
   </Box>
 );
 
-const CoursesView = () => (
-  <Box>
-    <Typography variant="h4" gutterBottom>
-      Quản lý khóa học
-    </Typography>
-    <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
-      <TextField label="Tìm kiếm khóa học" variant="outlined" size="small" />
-      <Button variant="contained">Thêm khóa học</Button>
+const CoursesView = () => {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+  
+  // Form states
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  
+  // New course form state
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [instructor, setInstructor] = useState('');
+  const [duration, setDuration] = useState<number>(0);
+  const [content, setContent] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load courses and categories on component mount
+  useEffect(() => {
+    fetchCourses();
+    fetchCategories();
+  }, []);
+
+  const fetchCourses = async () => {
+    try {
+      setLoading(true);
+      const data = await courseService.getAllCourses();
+      setCourses(data);
+    } catch (error: any) {
+      console.error('Error loading courses:', error);
+      showSnackbar(error.message || 'Không thể tải danh sách khóa học', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const data = await categoryService.getAllCategories();
+      setCategories(data);
+    } catch (error: any) {
+      console.error('Error loading categories:', error);
+      showSnackbar('Không thể tải danh mục khóa học', 'error');
+    }
+  };
+
+  const resetForm = () => {
+    setTitle('');
+    setDescription('');
+    setCategoryId('');
+    setInstructor('');
+    setDuration(0);
+    setContent('');
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    setIsEditing(false);
+    setEditingCourse(null);
+  };
+
+  const handleOpenCreateDialog = () => {
+    resetForm();
+    setOpenDialog(true);
+  };
+
+  const handleOpenEditDialog = (course: Course) => {
+    setIsEditing(true);
+    setEditingCourse(course);
+    
+    // Populate form with course data
+    setTitle(course.title);
+    setDescription(course.description);
+    setCategoryId(typeof course.category === 'string' ? course.category : course.category._id);
+    setInstructor(course.instructor);
+    setDuration(course.duration);
+    setContent(course.content);
+    setSelectedFile(null);
+    
+    setOpenDialog(true);
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      setSelectedFile(event.target.files[0]);
+    }
+  };
+
+  const handleSubmit = async () => {
+    // Validate form data
+    if (!title || !description || !categoryId || !instructor || !content || duration <= 0) {
+      showSnackbar('Vui lòng điền đầy đủ thông tin khóa học', 'error');
+      return;
+    }
+
+    if (!isEditing && !selectedFile) {
+      showSnackbar('Vui lòng chọn hình ảnh cho khóa học', 'error');
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('description', description);
+      formData.append('category', categoryId);
+      formData.append('instructor', instructor);
+      formData.append('duration', duration.toString());
+      formData.append('content', content);
+      
+      if (selectedFile) {
+        formData.append('headerImage', selectedFile);
+      }
+
+      let result;
+      
+      if (isEditing && editingCourse?._id) {
+        result = await courseService.updateCourse(editingCourse._id, formData);
+        showSnackbar('Khóa học đã được cập nhật thành công', 'success');
+        
+        setCourses(
+          courses.map((course) => (course._id === result._id ? result : course))
+        );
+      } else {
+        result = await courseService.createCourse(formData);
+        showSnackbar('Khóa học đã được tạo thành công', 'success');
+        
+        setCourses([...courses, result]);
+      }
+      
+      setOpenDialog(false);
+      resetForm();
+    } catch (error: any) {
+      console.error('Error saving course:', error);
+      showSnackbar(error.message || 'Không thể lưu khóa học', 'error');
+    }
+  };
+
+  const openDeleteConfirm = (id: string) => {
+    setConfirmDeleteId(id);
+  };
+
+  const handleDeleteCourse = async () => {
+    if (!confirmDeleteId) return;
+
+    try {
+      await courseService.deleteCourse(confirmDeleteId);
+      setCourses(courses.filter((course) => course._id !== confirmDeleteId));
+      setConfirmDeleteId(null);
+      showSnackbar('Khóa học đã được xóa thành công', 'success');
+    } catch (error: any) {
+      console.error('Error deleting course:', error);
+      showSnackbar(error.message || 'Không thể xóa khóa học', 'error');
+      setConfirmDeleteId(null);
+    }
+  };
+
+  const showSnackbar = (message: string, severity: 'success' | 'error') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
+  const getCategoryName = (categoryId: string) => {
+    const category = categories.find(cat => cat._id === categoryId);
+    return category ? category.name : 'Unknown';
+  };
+
+  return (
+    <Box>
+      <Typography variant="h4" gutterBottom>
+        Quản lý khóa học
+      </Typography>
+      
+      {/* Add new course button */}
+      <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
+        <TextField 
+          label="Tìm kiếm khóa học" 
+          variant="outlined" 
+          size="small" 
+        />
+        <Button 
+          variant="contained" 
+          startIcon={<Add />}
+          onClick={handleOpenCreateDialog}
+        >
+          Thêm khóa học
+        </Button>
+      </Box>
+      
+      {/* Courses table */}
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>ID</TableCell>
+              <TableCell>Tên khóa học</TableCell>
+              <TableCell>Danh mục</TableCell>
+              <TableCell>Giảng viên</TableCell>
+              <TableCell>Thời lượng</TableCell>
+              <TableCell align="right">Hành động</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={6} align="center">
+                  <CircularProgress size={24} sx={{ my: 2 }} />
+                </TableCell>
+              </TableRow>
+            ) : courses.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} align="center">Chưa có khóa học nào</TableCell>
+              </TableRow>
+            ) : (
+              courses.map((course) => (
+                <TableRow key={course._id}>
+                  <TableCell>{course._id}</TableCell>
+                  <TableCell>{course.title}</TableCell>
+                  <TableCell>
+                    {typeof course.category === 'string' 
+                      ? getCategoryName(course.category)
+                      : course.category.name}
+                  </TableCell>
+                  <TableCell>{course.instructor}</TableCell>
+                  <TableCell>{course.duration} giờ</TableCell>
+                  <TableCell align="right">
+                    <IconButton 
+                      size="small" 
+                      color="primary"
+                      onClick={() => handleOpenEditDialog(course)}
+                    >
+                      <Edit />
+                    </IconButton>
+                    <IconButton 
+                      size="small" 
+                      color="error"
+                      onClick={() => openDeleteConfirm(course._id!)}
+                    >
+                      <Delete />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Create/Edit Course Dialog */}
+      <Dialog 
+        open={openDialog} 
+        onClose={() => setOpenDialog(false)}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle>
+          {isEditing ? 'Chỉnh sửa khóa học' : 'Thêm khóa học mới'}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Tên khóa học"
+              fullWidth
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
+            
+            <TextField
+              label="Mô tả khóa học"
+              fullWidth
+              multiline
+              rows={3}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
+            />
+            
+            <FormControl fullWidth required>
+              <InputLabel>Danh mục</InputLabel>
+              <Select
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                label="Danh mục"
+              >
+                {categories.map(category => (
+                  <MenuItem key={category._id} value={category._id}>
+                    {category.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            
+            <TextField
+              label="Giảng viên"
+              fullWidth
+              value={instructor}
+              onChange={(e) => setInstructor(e.target.value)}
+              required
+            />
+            
+            <TextField
+              label="Thời lượng (giờ)"
+              fullWidth
+              type="number"
+              value={duration}
+              onChange={(e) => setDuration(parseInt(e.target.value) || 0)}
+              required
+            />
+            
+            <TextField
+              label="Nội dung khóa học"
+              fullWidth
+              multiline
+              rows={5}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              required
+            />
+            
+            <Box>
+              <Button
+                component="label"
+                variant="outlined"
+                startIcon={<Upload />}
+              >
+                {isEditing ? 'Cập nhật hình ảnh' : 'Chọn hình ảnh khóa học'}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
+              </Button>
+              {selectedFile && (
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  Đã chọn: {selectedFile.name}
+                </Typography>
+              )}
+              {isEditing && !selectedFile && (
+                <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
+                  Bỏ qua nếu không cần thay đổi hình ảnh
+                </Typography>
+              )}
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)}>Hủy</Button>
+          <Button onClick={handleSubmit} variant="contained">
+            {isEditing ? 'Cập nhật' : 'Tạo khóa học'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog
+        open={confirmDeleteId !== null}
+        onClose={() => setConfirmDeleteId(null)}
+      >
+        <DialogTitle>Xác nhận xóa</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Bạn có chắc chắn muốn xóa khóa học này? Hành động này không thể hoàn tác.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDeleteId(null)}>Hủy</Button>
+          <Button onClick={handleDeleteCourse} color="error" variant="contained">
+            Xóa
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={5000} 
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity}
+          variant="filled"
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>ID</TableCell>
-            <TableCell>Tên khóa học</TableCell>
-            <TableCell>Danh mục</TableCell>
-            <TableCell>Giảng viên</TableCell>
-            <TableCell align="right">Hành động</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          <TableRow>
-            <TableCell>101</TableCell>
-            <TableCell>React cơ bản</TableCell>
-            <TableCell>Lập trình Web</TableCell>
-            <TableCell>Trần Thị B</TableCell>
-            <TableCell align="right">
-              <Button size="small">Sửa</Button>
-              <Button size="small" color="error">Xóa</Button>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-    </TableContainer>
-  </Box>
-);
+  );
+};
 
 const CategoriesView = () => {
   const [categories, setCategories] = useState<Category[]>([]);
