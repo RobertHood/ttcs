@@ -29,9 +29,8 @@ const courseSchema = mongoose.Schema({
             description: { type: String },     
             lessons: [{
                 type: mongoose.Schema.Types.ObjectId,
-                ref: 'Lesson',
-                required: true
-                
+                ref: 'Lessons',
+                required: true  
             }], 
             order: { type: Number }                       
         }

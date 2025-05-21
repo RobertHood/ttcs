@@ -42,7 +42,10 @@ exports.getAllCourses = async (req, res) => {
 exports.getCourseById = async (req, res) => {
     try {
         const courseId = req.params.id;
-        const course = await CourseSchema.findById(courseId).populate('category');
+        const course = await CourseSchema.findById(courseId).populate('category').populate({
+            path: 'roadmap.lessons',
+            select: 'title'
+        });
         if (!course) {
             return res.status(404).json({ success: false, message: 'Course not found' });
         }

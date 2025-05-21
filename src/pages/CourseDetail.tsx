@@ -12,7 +12,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import Header from '../components/header';
 import Footer from '../components/footer';
-import { Description, Padding } from '@mui/icons-material';
 import { Accordion, AccordionSummary, AccordionDetails, AccordionActions} from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 export default function CourseDetail() {
@@ -58,6 +57,7 @@ export default function CourseDetail() {
         const data = await response.json();
         if (response.ok && data.data) {
           setCourse(data.data);
+          console.log(data)
         }
       } catch (error) {
         console.error(error);
@@ -136,9 +136,11 @@ export default function CourseDetail() {
                     aria-controls={`panel${idx}-content`}
                     id={`panel${idx}-header`}
                   >
-                    <Typography component="span" fontWeight={600}>
+                    <Box display={"flex"} flexDirection={'column'}><Typography component="span" fontWeight={600}>
                       {section.title}
                     </Typography>
+                    <Typography variant='body2'>{section.description}</Typography>
+                    </Box>
                   </AccordionSummary>
                   <AccordionDetails>
                     {section.lessons && section.lessons.length > 0 ? (
@@ -157,11 +159,6 @@ export default function CourseDetail() {
                             <span style={{ color: '#0099ff', marginRight: 8 }}>▶</span>
                             {lesson.title}
                           </Typography>
-                          {lesson.description && (
-                            <Typography variant="body2" sx={{ ml: 3 }}>
-                              - {lesson.description}
-                            </Typography>
-                          )}
                         </Box>
                       ))
                     ) : (
