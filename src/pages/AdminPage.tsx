@@ -1,9 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   AppBar,
   Box,
   Button,
   CssBaseline,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Divider,
   Drawer,
   IconButton,
@@ -13,6 +19,8 @@ import {
   ListItemIcon,
   ListItemText,
   Paper,
+  Snackbar,
+  Alert,
   Table,
   TableBody,
   TableCell,
@@ -23,6 +31,7 @@ import {
   Theme,
   Toolbar,
   Typography,
+  CircularProgress,
   useTheme,
 } from '@mui/material';
 import {
@@ -31,15 +40,20 @@ import {
   Dashboard,
   People,
   LibraryBooks,
-  Category,
+  Category as CategoryIcon,
   BarChart,
   Settings,
+  Edit,
+  Delete,
+  Add,
 } from '@mui/icons-material';
+import { categoryService, type Category } from '../config/categoryService';
 
 const drawerWidth = 240;
 
 export default function AdminPage() {
   const theme = useTheme();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(true);
   const [activeView, setActiveView] = useState('dashboard');
 
@@ -47,7 +61,7 @@ export default function AdminPage() {
     { text: 'Dashboard', icon: <Dashboard />, view: 'dashboard' },
     { text: 'Người dùng', icon: <People />, view: 'users' },
     { text: 'Khóa học', icon: <LibraryBooks />, view: 'courses' },
-    { text: 'Danh mục', icon: <Category />, view: 'categories' },
+    { text: 'Danh mục', icon: <CategoryIcon />, view: 'categories' },
     { text: 'Cài đặt', icon: <Settings />, view: 'settings' },
   ];
 
@@ -287,35 +301,292 @@ const CoursesView = () => (
   </Box>
 );
 
-const CategoriesView = () => (
-  <Box>
-    <Typography variant="h4" gutterBottom>
-      Quản lý danh mục
-    </Typography>
-    <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
-      <TextField label="Tên danh mục mới" variant="outlined" size="small" />
-      <Button variant="contained">Thêm danh mục</Button>
+const CategoriesView = () => {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryDescription, setNewCategoryDescription] = useState('');
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      const data = await categoryService.getAllCategories();
+      setCategories(data);
+      // Clear any previous errors if successful
+      if (snackbar.severity === 'error') {
+        setSnackbar({ ...snackbar, open: false });
+      }
+    } catch (error: any) {
+      console.error('Error loading categories:', error);
+      showSnackbar(error.message || 'Failed to load categories', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      showSnackbar('Tên danh mục không được để trống', 'error');
+      return;
+    }
+
+    try {
+      const newCategory = await categoryService.createCategory({
+        name: newCategoryName,
+        description: newCategoryDescription || undefined,
+      });
+      
+      setCategories([...categories, newCategory]);
+      setNewCategoryName('');
+      setNewCategoryDescription('');
+      showSnackbar('Thêm danh mục thành công', 'success');
+    } catch (error: any) {
+      showSnackbar(error.message || 'Không thể thêm danh mục', 'error');
+    }
+  };
+
+  const openEditDialog = (category: Category) => {
+    setEditingCategory(category);
+    setOpenDialog(true);
+  };
+
+  const handleUpdateCategory = async () => {
+    if (!editingCategory || !editingCategory.name.trim()) {
+      showSnackbar('Tên danh mục không được để trống', 'error');
+      return;
+    }
+
+    try {
+      const updatedCategory = await categoryService.updateCategory(
+        editingCategory._id!,
+        {
+          name: editingCategory.name,
+          description: editingCategory.description || undefined,
+        }
+      );
+      
+      setCategories(
+        categories.map((cat) => (cat._id === updatedCategory._id ? updatedCategory : cat))
+      );
+      setOpenDialog(false);
+      showSnackbar('Cập nhật danh mục thành công', 'success');
+    } catch (error: any) {
+      showSnackbar(error.message || 'Không thể cập nhật danh mục', 'error');
+    }
+  };
+
+  const openDeleteConfirm = (id: string) => {
+    setConfirmDeleteId(id);
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!confirmDeleteId) return;
+
+    try {
+      await categoryService.deleteCategory(confirmDeleteId);
+      setCategories(categories.filter((cat) => cat._id !== confirmDeleteId));
+      setConfirmDeleteId(null);
+      showSnackbar('Xóa danh mục thành công', 'success');
+    } catch (error: any) {
+      showSnackbar(error.message || 'Không thể xóa danh mục', 'error');
+      setConfirmDeleteId(null);
+    }
+  };
+
+  const showSnackbar = (message: string, severity: 'success' | 'error') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (editingCategory) {
+      setEditingCategory({
+        ...editingCategory,
+        name: e.target.value
+      });
+    }
+  };
+
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (editingCategory) {
+      setEditingCategory({
+        ...editingCategory,
+        description: e.target.value
+      });
+    }
+  };
+
+  return (
+    <Box>
+      <Typography variant="h4" gutterBottom>
+        Quản lý danh mục
+      </Typography>
+      
+      {/* Add new category */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Thêm danh mục mới
+        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField 
+            label="Tên danh mục" 
+            variant="outlined" 
+            size="small" 
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            required
+          />
+          <TextField 
+            label="Mô tả (tùy chọn)" 
+            variant="outlined" 
+            size="small" 
+            multiline
+            rows={2}
+            value={newCategoryDescription}
+            onChange={(e) => setNewCategoryDescription(e.target.value)}
+          />
+          <Button 
+            variant="contained" 
+            startIcon={<Add />}
+            onClick={handleCreateCategory}
+            sx={{ maxWidth: 200 }}
+          >
+            Thêm danh mục
+          </Button>
+        </Box>
+      </Paper>
+      
+      {/* Categories list */}
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>ID</TableCell>
+              <TableCell>Tên danh mục</TableCell>
+              <TableCell>Mô tả</TableCell>
+              <TableCell>Ngày tạo</TableCell>
+              <TableCell align="right">Hành động</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={5} align="center">Đang tải...</TableCell>
+              </TableRow>
+            ) : categories.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} align="center">Không có danh mục nào</TableCell>
+              </TableRow>
+            ) : (
+              categories.map((category) => (
+                <TableRow key={category._id}>
+                  <TableCell>{category._id}</TableCell>
+                  <TableCell>{category.name}</TableCell>
+                  <TableCell>{category.description || '—'}</TableCell>
+                  <TableCell>
+                    {category.createdAt 
+                      ? new Date(category.createdAt).toLocaleDateString('vi-VN') 
+                      : '—'}
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton 
+                      size="small" 
+                      color="primary"
+                      onClick={() => openEditDialog(category)}
+                    >
+                      <Edit />
+                    </IconButton>
+                    <IconButton 
+                      size="small" 
+                      color="error"
+                      onClick={() => openDeleteConfirm(category._id!)}
+                    >
+                      <Delete />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Edit category dialog */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <DialogTitle>Chỉnh sửa danh mục</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField 
+              label="Tên danh mục" 
+              variant="outlined" 
+              fullWidth
+              value={editingCategory?.name || ''}
+              onChange={handleNameChange}
+              required
+            />
+            <TextField 
+              label="Mô tả (tùy chọn)" 
+              variant="outlined" 
+              multiline
+              rows={3}
+              fullWidth
+              value={editingCategory?.description || ''}
+              onChange={handleDescriptionChange}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)}>Hủy</Button>
+          <Button onClick={handleUpdateCategory} variant="contained">Lưu thay đổi</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog
+        open={confirmDeleteId !== null}
+        onClose={() => setConfirmDeleteId(null)}
+      >
+        <DialogTitle>Xác nhận xóa</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Bạn có chắc chắn muốn xóa danh mục này? Hành động này không thể hoàn tác.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDeleteId(null)}>Hủy</Button>
+          <Button onClick={handleDeleteCategory} color="error" variant="contained">
+            Xóa
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={5000} 
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity}
+          variant="filled"
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>ID</TableCell>
-            <TableCell>Tên danh mục</TableCell>
-            <TableCell align="right">Hành động</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          <TableRow>
-            <TableCell>1</TableCell>
-            <TableCell>Lập trình</TableCell>
-            <TableCell align="right">
-              <Button size="small">Sửa</Button>
-              <Button size="small" color="error">Xóa</Button>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-    </TableContainer>
-  </Box>
-);
+  );
+};

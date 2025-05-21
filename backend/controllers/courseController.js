@@ -1,10 +1,7 @@
 const CourseSchema = require('../models/courseModel');
 const Category = require('../models/categoryModel');
-<<<<<<< HEAD
 const mongoose = require('mongoose');
-=======
 const User = require('../models/usersModel');
->>>>>>> 72f1d0a46a4f9b6ad4951708ebdad93e86160cfc
 
 exports.createCourse = async (req, res) => {
     const { title, description, categoryName, category, instructor, duration, content } = req.body;
@@ -54,7 +51,20 @@ exports.getAllCourses = async (req, res) => {
     }
 };
 
-<<<<<<< HEAD
+exports.getCourseById = async (req, res) => {
+    try {
+        const courseId = req.params.id;
+        const course = await CourseSchema.findById(courseId).populate('category');
+        if (!course) {
+            return res.status(404).json({ success: false, message: 'Course not found' });
+        }
+        res.status(200).json({ success: true, data: course });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
 exports.updateCourse = async (req, res) => {
     const { id } = req.params;
     const { title, description, categoryName, category, instructor, duration, content } = req.body;
@@ -103,24 +113,11 @@ exports.updateCourse = async (req, res) => {
         
         res.status(200).json({ success: true, data: updatedCourse });
     } catch (error) {
-=======
-
-exports.getCourseById = async (req, res) => {
-    try {
-        const courseId = req.params.id;
-        const course = await CourseSchema.findById(courseId).populate('category');
-        if (!course) {
-            return res.status(404).json({ success: false, message: 'Course not found' });
-        }
-        res.status(200).json({ success: true, data: course });
-      } catch (error) {
->>>>>>> 72f1d0a46a4f9b6ad4951708ebdad93e86160cfc
         console.error(error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
 
-<<<<<<< HEAD
 exports.deleteCourse = async (req, res) => {
     const { id } = req.params;
     
@@ -132,7 +129,11 @@ exports.deleteCourse = async (req, res) => {
         }
         
         res.status(200).json({ success: true, data: {} });
-=======
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
 
 exports.enrollInCourse = async (req, res) => {
     try {
@@ -165,13 +166,8 @@ exports.enrollInCourse = async (req, res) => {
             await user.save();
         }
         res.status(200).json({ success: true, message: 'Enrolled successfully', course });
->>>>>>> 72f1d0a46a4f9b6ad4951708ebdad93e86160cfc
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
-<<<<<<< HEAD
 };
-=======
-};
->>>>>>> 72f1d0a46a4f9b6ad4951708ebdad93e86160cfc
