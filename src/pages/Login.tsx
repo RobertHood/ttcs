@@ -17,11 +17,14 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    try{    
+    setLoading(true);
+    setError('');
+    
+    try {    
       const response = await fetch('http://localhost:8001/api/auth/login', {
         method: 'POST',
         headers: {
@@ -30,18 +33,29 @@ export default function Login() {
         credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
+      
       const data = await response.json();
+      
       if (response.ok) {
-        setError('Login successful! Redirecting');
-        navigate("/registercourse");
-      }else{
-        setError(data.message || "Login failed");
-        return;
+        setError('Đăng nhập thành công!');
+        
+        // Check if user is admin
+        const isAdmin = data.user?.role === 'admin';
+        
+        if (isAdmin) {
+          navigate("/admin");
+        } else {
+          navigate("/registercourse");
+        }
+      } else {
+        setError(data.message || "Đăng nhập thất bại");
       }
-   } catch (error) {
+    } catch (error) {
       console.error('Error:', error);
+      setError('Lỗi kết nối đến máy chủ');
+    } finally {
+      setLoading(false);
     }
-    
   };
 
   return (

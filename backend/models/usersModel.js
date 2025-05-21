@@ -89,6 +89,13 @@ const userSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Course'
     }],
+    lessondone: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Lesson',
+        finishedDate: {
+            type: Date,
+        }   
+    }],
 },{
     timestamps: true
 });

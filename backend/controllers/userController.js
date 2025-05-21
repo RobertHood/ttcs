@@ -1,4 +1,3 @@
-const { validateUserSchema } = require('../middlewares/validator.js');
 const User = require('../models/usersModel.js');
 const jwt = require("jsonwebtoken");
 
@@ -11,6 +10,7 @@ exports.getAllUsers = async (req, res) => {
         res.status(200).json({ success: true, message: 'All users', data: users });
     } catch (error) {
         console.log(error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 }
 
@@ -25,6 +25,7 @@ exports.getUserByEmail = async (req, res) => {
     }
     catch (error) {
         console.log(error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 }
 
@@ -39,6 +40,7 @@ exports.getUserByRole = async (req, res) => {
     }
     catch (error) {
         console.log(error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 }
 
@@ -68,36 +70,75 @@ exports.deleteUser = async (req, res) => {
         res.status(200).json({success: true, message: "User deleted"});
     }catch(error){
         console.log(error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
 
 exports.updateUser = async (req, res) => {
     const {_id} = req.query;
-    const {username, email, role, verified} = req.body;
+    const {
+        username, 
+        email, 
+        role, 
+        verified
+    } = req.body;
+    
+    console.log("Update user request:", { _id, body: req.body });
+    
     try {
-        const {error, value} = validateUserSchema.validate({
-            username,
-            email
-        });
-        if (error) {
-            return res. status(401).json ({success: false, message: error.details[0].message});
+        // Simple validation
+        if (!email || !username) {
+            return res.status(400).json({
+                success: false, 
+                message: 'Email and username are required'
+            });
         }
 
-        const existingUser = await User.findOne({_id});
-        if (!existingUser) {
-			return res
-				.status(404)
-				.json({ success: false, message: 'Post unavailable' });
-		}
-		existingUser.username = username;
-		existingUser.email = email;
-		existingUser.role = role;
-		existingUser.verified = verified;
+        // Create update object with only fields we want to change
+        const updateData = { 
+            profileName: username,
+            email: email
+        };
+        
+        // Add optional fields only if they were provided
+        if (role !== undefined) {
+            updateData.role = role === 'admin' ? 'admin' : 'user';
+        }
+        
+        if (verified !== undefined) {
+            updateData.verified = verified;
+        }
+        
+        // Use findByIdAndUpdate to directly update only the fields we want
+        // This avoids validation issues with existing fields like "level"
+        const result = await User.findByIdAndUpdate(
+            _id, 
+            updateData,
+            { 
+                new: true, // Return the updated document
+                runValidators: false // Don't run validators on fields we're not updating
+            }
+        );
+        
+        if (!result) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'User not found' 
+            });
+        }
 
-		const result = await existingUser.save();
-		res.status(200).json({ success: true, message: 'Updated', data: result });
-    }catch(error){
-        console.log(error);
+        res.status(200).json({ 
+            success: true, 
+            message: 'User updated successfully', 
+            data: result 
+        });
+    } catch(error) {
+        console.log("Error updating user:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Server error', 
+            error: error.message 
+        });
     }
 }
 

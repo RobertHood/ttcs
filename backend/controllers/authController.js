@@ -82,6 +82,7 @@ exports.login = async (req, res) => {
             userID: existingUser._id,
             email: existingUser.email,
             verified: existingUser.verified,
+            role: existingUser.role
         },process.env.TOKEN_SECRET, {
             expiresIn: "7d",
         });
