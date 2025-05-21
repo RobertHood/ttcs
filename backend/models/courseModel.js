@@ -27,11 +27,12 @@ const courseSchema = mongoose.Schema({
         {
             title: { type: String, required: true },         
             description: { type: String },     
-            lessons: {
+            lessons: [{
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'Lesson',
                 required: true
-            }, 
+                
+            }], 
             order: { type: Number }                       
         }
         ],
