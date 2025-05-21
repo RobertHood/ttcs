@@ -83,7 +83,7 @@ exports.updateCourse = async (req, res) => {
             updatedAt: Date.now()
         };
         
-        // Check if we have a category ID
+    
         if (category && mongoose.Types.ObjectId.isValid(category)) {
             const categoryDoc = await Category.findById(category);
             if (!categoryDoc) {
@@ -91,7 +91,7 @@ exports.updateCourse = async (req, res) => {
             }
             updateData.category = categoryDoc._id;
         } 
-        // Otherwise try to find by name
+
         else if (categoryName) {
             const categoryDoc = await Category.findOne({name: categoryName});
             if (!categoryDoc) {
