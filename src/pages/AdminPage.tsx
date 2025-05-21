@@ -37,7 +37,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Card,
+  CardContent,
 } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import {
   Menu,
   ChevronLeft,
@@ -51,9 +54,13 @@ import {
   Delete,
   Add,
   Upload,
+  Person,
+  MenuBook,
+  Class,
 } from '@mui/icons-material';
 import { categoryService, type Category } from '../config/categoryService';
 import { courseService, type Course } from '../config/courseService';
+import { userService, type User } from '../config/userService';
 
 const drawerWidth = 240;
 
@@ -214,61 +221,435 @@ const closedMixin = (theme: Theme) => ({
   },
 });
 
-// Placeholder components for different views
-const DashboardView = () => (
-  <Box>
-    <Typography variant="h4" gutterBottom>
-      Thống kê tổng quan
-    </Typography>
-    <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-      <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 2, minWidth: 200 }}>
-        <Typography variant="h6">Tổng người dùng</Typography>
-        <Typography variant="h4">1,234</Typography>
-      </Box>
-      <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 2, minWidth: 200 }}>
-        <Typography variant="h6">Tổng khóa học</Typography>
-        <Typography variant="h4">567</Typography>
-      </Box>
-    </Box>
-  </Box>
-);
+// Grid components
+const Grid = styled('div')(({ theme }) => ({
+  display: 'grid',
+  gap: theme.spacing(3),
+  gridTemplateColumns: 'repeat(12, 1fr)',
+  marginBottom: theme.spacing(4),
+}));
 
-const UsersView = () => (
-  <Box>
-    <Typography variant="h4" gutterBottom>
-      Quản lý người dùng
-    </Typography>
-    <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
-      <TextField label="Tìm kiếm người dùng" variant="outlined" size="small" />
-      <Button variant="contained">Thêm người dùng</Button>
+const GridItem = styled('div')<{ gridColumn?: string }>(({ theme, gridColumn }) => ({
+  gridColumn: gridColumn || 'span 4',
+}));
+
+// Dashboard View Component
+const DashboardView = () => {
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalCourses: 0,
+    totalCategories: 0,
+    recentUsers: [] as User[]
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const data = await userService.getDashboardStats();
+        setStats(data);
+      } catch (error) {
+        console.error('Failed to fetch dashboard stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  return (
+    <Box>
+      <Typography variant="h4" gutterBottom>
+        Thống kê tổng quan
+      </Typography>
+
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <>
+          {/* Stats cards */}
+          <Grid>
+            <GridItem>
+              <Card sx={{ height: '100%' }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <Person color="primary" sx={{ mr: 1 }} />
+                    <Typography variant="h6">Tổng người dùng</Typography>
+                  </Box>
+                  <Typography variant="h3">{stats.totalUsers}</Typography>
+                </CardContent>
+              </Card>
+            </GridItem>
+            
+            <GridItem>
+              <Card sx={{ height: '100%' }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <MenuBook color="primary" sx={{ mr: 1 }} />
+                    <Typography variant="h6">Tổng khóa học</Typography>
+                  </Box>
+                  <Typography variant="h3">{stats.totalCourses}</Typography>
+                </CardContent>
+              </Card>
+            </GridItem>
+            
+            <GridItem>
+              <Card sx={{ height: '100%' }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <Class color="primary" sx={{ mr: 1 }} />
+                    <Typography variant="h6">Tổng danh mục</Typography>
+                  </Box>
+                  <Typography variant="h3">{stats.totalCategories}</Typography>
+                </CardContent>
+              </Card>
+            </GridItem>
+          </Grid>
+
+          {/* Recent users */}
+          <Typography variant="h5" gutterBottom sx={{ mt: 4 }}>
+            Người dùng gần đây
+          </Typography>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Họ tên</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Vai trò</TableCell>
+                  <TableCell>Ngày đăng ký</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {stats.recentUsers.length > 0 ? (
+                  stats.recentUsers.map((user) => (
+                    <TableRow key={user._id}>
+                      <TableCell>{user.profileName || 'Không có tên'}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>{user.role === 'admin' ? 'Quản trị viên' : 'Người dùng'}</TableCell>
+                      <TableCell>
+                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} align="center">
+                      Không có người dùng nào
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </>
+      )}
     </Box>
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>ID</TableCell>
-            <TableCell>Họ tên</TableCell>
-            <TableCell>Email</TableCell>
-            <TableCell>Vai trò</TableCell>
-            <TableCell align="right">Hành động</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          <TableRow>
-            <TableCell>1</TableCell>
-            <TableCell>Nguyễn Văn A</TableCell>
-            <TableCell>nguyenvana@example.com</TableCell>
-            <TableCell>Quản trị</TableCell>
-            <TableCell align="right">
-              <Button size="small">Sửa</Button>
-              <Button size="small" color="error">Xóa</Button>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-    </TableContainer>
-  </Box>
-);
+  );
+};
+
+const UsersView = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Form states
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  
+  // User form state
+  const [email, setEmail] = useState('');
+  const [profileName, setProfileName] = useState('');
+  const [role, setRole] = useState('user');
+  const [verified, setVerified] = useState(false);
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const data = await userService.getAllUsers();
+      setUsers(data);
+    } catch (error: any) {
+      console.error('Error loading users:', error);
+      showSnackbar(error.message || 'Không thể tải danh sách người dùng', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setEmail('');
+    setProfileName('');
+    setRole('user');
+    setVerified(false);
+    setIsEditing(false);
+    setEditingUser(null);
+  };
+
+  const handleOpenEditDialog = (user: User) => {
+    setIsEditing(true);
+    setEditingUser(user);
+    
+    // Log the user object for debugging
+    console.log("Opening edit dialog for user:", user);
+    
+    // Populate form with user data
+    setEmail(user.email);
+    setProfileName(user.profileName || '');
+    setRole(user.role || 'user');
+    setVerified(user.verified || false);
+    
+    setOpenDialog(true);
+  };
+
+  const handleSubmit = async () => {
+    // Validate form data
+    if (!email || !profileName) {
+      showSnackbar('Vui lòng điền đầy đủ thông tin người dùng', 'error');
+      return;
+    }
+
+    try {
+      if (isEditing && editingUser?._id) {
+        console.log('Sending user update:', {
+          email,
+          profileName,
+          role,
+          verified
+        });
+        
+        const result = await userService.updateUser(editingUser._id, {
+          email,
+          profileName,
+          role: role === "admin" ? "admin" : "user",
+          verified
+        });
+        
+        showSnackbar('Người dùng đã được cập nhật thành công', 'success');
+        
+        // Refresh user list after update
+        fetchUsers();
+      }
+      
+      setOpenDialog(false);
+      resetForm();
+    } catch (error: any) {
+      console.error('Error saving user:', error);
+      showSnackbar(error.message || 'Không thể lưu người dùng', 'error');
+    }
+  };
+
+  const openDeleteConfirm = (id: string) => {
+    setConfirmDeleteId(id);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!confirmDeleteId) return;
+
+    try {
+      await userService.deleteUser(confirmDeleteId);
+      setUsers(users.filter((user) => user._id !== confirmDeleteId));
+      setConfirmDeleteId(null);
+      showSnackbar('Người dùng đã được xóa thành công', 'success');
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      showSnackbar(error.message || 'Không thể xóa người dùng', 'error');
+      setConfirmDeleteId(null);
+    }
+  };
+
+  const showSnackbar = (message: string, severity: 'success' | 'error') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
+  const filteredUsers = users.filter(user => 
+    user.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    user.profileName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <Box>
+      <Typography variant="h4" gutterBottom>
+        Quản lý người dùng
+      </Typography>
+      <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
+        <TextField 
+          label="Tìm kiếm người dùng" 
+          variant="outlined" 
+          size="small" 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          sx={{ flexGrow: 1 }}
+        />
+      </Box>
+      
+      {/* Users table */}
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>ID</TableCell>
+              <TableCell>Họ tên</TableCell>
+              <TableCell>Email</TableCell>
+              <TableCell>Vai trò</TableCell>
+              <TableCell>Trạng thái</TableCell>
+              <TableCell align="right">Hành động</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={6} align="center">
+                  <CircularProgress size={24} sx={{ my: 2 }} />
+                </TableCell>
+              </TableRow>
+            ) : filteredUsers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} align="center">Không tìm thấy người dùng nào</TableCell>
+              </TableRow>
+            ) : (
+              filteredUsers.map((user) => (
+                <TableRow key={user._id}>
+                  <TableCell>{user._id}</TableCell>
+                  <TableCell>{user.profileName || 'Không có tên'}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.role === 'admin' ? 'Quản trị viên' : 'Người dùng'}</TableCell>
+                  <TableCell>{user.verified ? 'Đã xác thực' : 'Chưa xác thực'}</TableCell>
+                  <TableCell align="right">
+                    <IconButton 
+                      size="small" 
+                      color="primary"
+                      onClick={() => handleOpenEditDialog(user)}
+                    >
+                      <Edit />
+                    </IconButton>
+                    <IconButton 
+                      size="small" 
+                      color="error"
+                      onClick={() => openDeleteConfirm(user._id!)}
+                    >
+                      <Delete />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Edit User Dialog */}
+      <Dialog 
+        open={openDialog} 
+        onClose={() => setOpenDialog(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>
+          Chỉnh sửa thông tin người dùng
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Email"
+              fullWidth
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            
+            <TextField
+              label="Họ tên"
+              fullWidth
+              value={profileName}
+              onChange={(e) => setProfileName(e.target.value)}
+              required
+            />
+            
+            <FormControl fullWidth>
+              <InputLabel>Vai trò</InputLabel>
+              <Select
+                value={role === "admin" ? "admin" : "user"}
+                onChange={(e) => setRole(e.target.value)}
+                label="Vai trò"
+              >
+                <MenuItem value="user">Người dùng</MenuItem>
+                <MenuItem value="admin">Quản trị viên</MenuItem>
+              </Select>
+            </FormControl>
+            
+            <FormControl fullWidth>
+              <InputLabel>Trạng thái xác thực</InputLabel>
+              <Select
+                value={verified ? "true" : "false"}
+                onChange={(e) => setVerified(e.target.value === 'true')}
+                label="Trạng thái xác thực"
+              >
+                <MenuItem value="true">Đã xác thực</MenuItem>
+                <MenuItem value="false">Chưa xác thực</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)}>Hủy</Button>
+          <Button onClick={handleSubmit} variant="contained">
+            Cập nhật
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog
+        open={confirmDeleteId !== null}
+        onClose={() => setConfirmDeleteId(null)}
+      >
+        <DialogTitle>Xác nhận xóa</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Bạn có chắc chắn muốn xóa người dùng này? Hành động này không thể hoàn tác.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDeleteId(null)}>Hủy</Button>
+          <Button onClick={handleDeleteUser} color="error" variant="contained">
+            Xóa
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={5000} 
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity}
+          variant="filled"
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
+};
 
 const CoursesView = () => {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -388,17 +769,15 @@ const CoursesView = () => {
         formData.append('headerImage', selectedFile);
       }
 
-      let result;
-      
       if (isEditing && editingCourse?._id) {
-        result = await courseService.updateCourse(editingCourse._id, formData);
+        const result = await courseService.updateCourse(editingCourse._id, formData);
         showSnackbar('Khóa học đã được cập nhật thành công', 'success');
         
         setCourses(
           courses.map((course) => (course._id === result._id ? result : course))
         );
       } else {
-        result = await courseService.createCourse(formData);
+        const result = await courseService.createCourse(formData);
         showSnackbar('Khóa học đã được tạo thành công', 'success');
         
         setCourses([...courses, result]);
