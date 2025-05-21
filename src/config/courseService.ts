@@ -11,6 +11,7 @@ interface Course {
   content: string;
   headerImage?: string | File;
   users_enrolled?: string[];
+  roadmap?: []
   createdAt?: string;
   updatedAt?: string;
 }

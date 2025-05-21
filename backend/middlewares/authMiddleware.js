@@ -13,7 +13,7 @@ exports.verifyUser = (req, res, next) => {
     try{
         const userToken = token.split(' ')[1];
         const jwtVerified = jwt.verify(userToken, process.env.TOKEN_SECRET);
-        console.log('Decoded token:', jwtVerified);
+        
         if(jwtVerified){
             req.user = jwtVerified;
             next();

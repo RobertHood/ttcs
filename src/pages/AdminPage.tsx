@@ -61,6 +61,7 @@ import {
 import { categoryService, type Category } from '../config/categoryService';
 import { courseService, type Course } from '../config/courseService';
 import { userService, type User } from '../config/userService';
+import RoadmapEditor from '../components/RoadmapEditor';
 
 const drawerWidth = 240;
 
@@ -69,6 +70,7 @@ export default function AdminPage() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(true);
   const [activeView, setActiveView] = useState('dashboard');
+  const [roadmap, setRoadmap] = useState([]);
 
   const menuItems = [
     { text: 'Dashboard', icon: <Dashboard />, view: 'dashboard' },
@@ -192,14 +194,14 @@ export default function AdminPage() {
 
       {/* Main content */}
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-        <Toolbar /> {/* Spacer for AppBar */}
+        <Toolbar /> 
         {renderView()}
       </Box>
     </Box>
   );
 }
 
-// Style mixins for drawer
+
 const openedMixin = (theme: Theme) => ({
   width: drawerWidth,
   transition: theme.transitions.create('width', {
@@ -221,7 +223,6 @@ const closedMixin = (theme: Theme) => ({
   },
 });
 
-// Grid components
 const Grid = styled('div')(({ theme }) => ({
   display: 'grid',
   gap: theme.spacing(3),
@@ -233,7 +234,7 @@ const GridItem = styled('div')<{ gridColumn?: string }>(({ theme, gridColumn }) 
   gridColumn: gridColumn || 'span 4',
 }));
 
-// Dashboard View Component
+
 const DashboardView = () => {
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -672,6 +673,7 @@ const CoursesView = () => {
   const [content, setContent] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [roadmap, setRoadmap] = useState([]);
 
   // Load courses and categories on component mount
   useEffect(() => {
@@ -715,6 +717,7 @@ const CoursesView = () => {
     }
     setIsEditing(false);
     setEditingCourse(null);
+    setRoadmap([]);
   };
 
   const handleOpenCreateDialog = () => {
@@ -734,6 +737,7 @@ const CoursesView = () => {
     setDuration(course.duration);
     setContent(course.content);
     setSelectedFile(null);
+    setRoadmap(course.roadmap || []);
     
     setOpenDialog(true);
   };
@@ -764,7 +768,17 @@ const CoursesView = () => {
       formData.append('instructor', instructor);
       formData.append('duration', duration.toString());
       formData.append('content', content);
-      
+
+      // Parse roadmap JSON
+      if (roadmap) {
+        try {
+          formData.append('roadmap', JSON.stringify(roadmap));
+        } catch (err) {
+          showSnackbar('Roadmap không hợp lệ (phải là JSON)', 'error');
+          return;
+        }
+      }
+
       if (selectedFile) {
         formData.append('headerImage', selectedFile);
       }
@@ -772,14 +786,12 @@ const CoursesView = () => {
       if (isEditing && editingCourse?._id) {
         const result = await courseService.updateCourse(editingCourse._id, formData);
         showSnackbar('Khóa học đã được cập nhật thành công', 'success');
-        
         setCourses(
           courses.map((course) => (course._id === result._id ? result : course))
         );
       } else {
         const result = await courseService.createCourse(formData);
         showSnackbar('Khóa học đã được tạo thành công', 'success');
-        
         setCourses([...courses, result]);
       }
       
@@ -837,7 +849,7 @@ const CoursesView = () => {
           size="small" 
         />
         <Button 
-          variant="contained" 
+          variant="contained"  
           startIcon={<Add />}
           onClick={handleOpenCreateDialog}
         >
@@ -875,7 +887,7 @@ const CoursesView = () => {
                   <TableCell>{course._id}</TableCell>
                   <TableCell>{course.title}</TableCell>
                   <TableCell>
-                    {typeof course.category === 'string' 
+                    {typeof course.category === 'string'  
                       ? getCategoryName(course.category)
                       : course.category.name}
                   </TableCell>
@@ -1002,6 +1014,7 @@ const CoursesView = () => {
                 </Typography>
               )}
             </Box>
+            <RoadmapEditor roadmap={roadmap} setRoadmap={setRoadmap} courseId={editingCourse?._id}  />
           </Box>
         </DialogContent>
         <DialogActions>
@@ -1070,10 +1083,6 @@ const CategoriesView = () => {
       setLoading(true);
       const data = await categoryService.getAllCategories();
       setCategories(data);
-      // Clear any previous errors if successful
-      if (snackbar.severity === 'error') {
-        setSnackbar({ ...snackbar, open: false });
-      }
     } catch (error: any) {
       console.error('Error loading categories:', error);
       showSnackbar(error.message || 'Failed to load categories', 'error');
