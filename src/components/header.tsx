@@ -20,7 +20,7 @@ export default function Header() {
   useEffect(() => {
   fetch('http://localhost:8001/api/user/me', {
     method: 'GET',
-    credentials: 'include', // This sends cookies!
+    credentials: 'include', 
   })
     .then(res => res.json())
     .then(data => {
@@ -97,6 +97,15 @@ export default function Header() {
           <Box sx={{ display: 'flex', gap: 2 }}>
             {isLoggedIn ? (
               <>
+                {user?.role === 'admin' && (
+                    <Button
+                      variant="outlined"
+                      onClick={() => handleNavigation('/admin')}
+                      sx={{ borderRadius: 2 }}
+                    >
+                      Admin Page
+                    </Button>
+                  )}
                 <Button
                   variant="text"
                   startIcon={<AccountCircleIcon />}
@@ -112,7 +121,7 @@ export default function Header() {
                     },
                   }}
                 >
-                  {user?.profileName || 'User Profile'}
+                  {user?.profileName}
                 </Button>
                 <Button
                   variant="outlined"

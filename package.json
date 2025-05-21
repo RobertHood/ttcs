@@ -36,6 +36,7 @@
     "nodemon": "^3.1.10",
     "path": "^0.12.7",
     "react": "^19.0.0",
+    "react-calendar-heatmap": "^1.10.0",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.56.1",
@@ -45,6 +46,7 @@
   "devDependencies": {
     "@eslint/js": "^9.22.0",
     "@types/react": "^19.0.10",
+    "@types/react-calendar-heatmap": "^1.9.0",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9.22.0",
