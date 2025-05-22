@@ -26,7 +26,7 @@ const API_URL = 'http://localhost:8001/api';
 
 export const courseService = {
   // Get all courses
-  getAllCourses: async (): Promise<Course[]> => {
+  getAllCourses: async (): Promise<ApiResponse<Course[]>> => {
     try {
       const response = await fetch(`${API_URL}/courses`, {
         method: 'GET',
@@ -39,7 +39,7 @@ export const courseService = {
       
       const result = await response.json();
       console.log('Courses response:', result);
-      return result.data || [];
+      return result;
     } catch (error: any) {
       console.error('Error fetching courses:', error);
       throw new Error('Không thể tải khóa học. Vui lòng thử lại sau.');
@@ -131,4 +131,4 @@ export const courseService = {
   }
 };
 
-export type { Course }; 
+export type { Course, ApiResponse }; 
