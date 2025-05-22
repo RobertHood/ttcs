@@ -1096,6 +1096,10 @@ const CategoriesView = () => {
       showSnackbar('Tên danh mục không được để trống', 'error');
       return;
     }
+    if(!newCategoryDescription.trim()) {
+      showSnackbar('Mô tả không được để trống', 'error');
+      return;
+    }
 
     try {
       const newCategory = await categoryService.createCategory({
@@ -1207,8 +1211,9 @@ const CategoriesView = () => {
             required
           />
           <TextField 
-            label="Mô tả (tùy chọn)" 
+            label="Mô tả" 
             variant="outlined" 
+            required
             size="small" 
             multiline
             rows={2}
