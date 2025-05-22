@@ -27,16 +27,16 @@ const upload = multer({
     }
 });
 
-// Get all courses (public access)
+
 router.get('/', courseController.getAllCourses);
 
-// Admin only routes
+
 // Create new course with image upload
 router.post('/', verifyUser, verifyAdmin, upload.single('headerImage'), courseController.createCourse);
 
 // Update course
 router.put('/:id', verifyUser, verifyAdmin, upload.single('headerImage'), courseController.updateCourse);
-
+router.put('/:id/roadmap', verifyUser, verifyAdmin, courseController.updateCourseRoadmap);
 // Delete course
 router.delete('/:id', verifyUser, verifyAdmin, courseController.deleteCourse);
 

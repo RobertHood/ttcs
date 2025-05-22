@@ -174,3 +174,32 @@ exports.enrollInCourse = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
+
+exports.updateCourseRoadmap = async (req, res) => {
+    const { id } = req.params;
+    const { roadmap } = req.body;
+
+    if (!roadmap) {
+        return res.status(400).json({ success: false, message: 'Roadmap is required' });
+    }
+
+    try {
+        const updatedCourse = await CourseSchema.findByIdAndUpdate(
+            id,
+            { roadmap, updatedAt: Date.now() },
+            { new: true, runValidators: true }
+        ).populate('category').populate({
+            path: 'roadmap.lessons',
+            select: 'title'
+        });
+
+        if (!updatedCourse) {
+            return res.status(404).json({ success: false, message: 'Course not found' });
+        }
+
+        res.status(200).json({ success: true, data: updatedCourse });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
