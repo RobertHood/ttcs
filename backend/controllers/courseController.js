@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const User = require('../models/usersModel');
 
 exports.createCourse = async (req, res) => {
-    const { title, description, categoryName, category, instructor, duration, content } = req.body;
+    const { title, description, categoryName, category,  duration, content } = req.body;
     const headerImage = req.file ? req.file.path : req.body.headerImage || null;
     
     try {
@@ -27,7 +27,7 @@ exports.createCourse = async (req, res) => {
             title,
             description,
             category: categoryDoc._id,
-            instructor,
+            
             duration, 
             content,
             headerImage
@@ -70,14 +70,14 @@ exports.getCourseById = async (req, res) => {
 
 exports.updateCourse = async (req, res) => {
     const { id } = req.params;
-    const { title, description, categoryName, category, instructor, duration, content } = req.body;
+    const { title, description, categoryName, category,  duration, content } = req.body;
     const headerImage = req.file ? req.file.path : req.body.headerImage || undefined;
     
     try {
         let updateData = {
             title,
             description,
-            instructor,
+            
             duration,
             content,
             updatedAt: Date.now()

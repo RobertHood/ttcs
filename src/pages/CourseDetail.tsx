@@ -9,7 +9,7 @@ import {
   Button
 } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import Header from '../components/header';
 import Footer from '../components/footer';
 import { Accordion, AccordionSummary, AccordionDetails, AccordionActions} from '@mui/material';
@@ -84,15 +84,6 @@ export default function CourseDetail() {
     fetchCourseInProgress();
   })
 
-  const handleRegister = () => {
-    const registered = JSON.parse(localStorage.getItem('registeredCourses') || '[]');
-    const exists = registered.some((c: any) => c.id === course.id);
-    if (!exists) {
-      registered.push({ ...course, progress: 0 });
-      localStorage.setItem('registeredCourses', JSON.stringify(registered));
-    }
-    navigate('/course-regis');
-  };
 
   if (!course) return <Typography>Loading...</Typography>;
   const isInProgress = courseInProgress.some((c: any) => c._id === course._id);
@@ -114,9 +105,6 @@ export default function CourseDetail() {
             ))}</Typography>
             <Typography variant="body1" color="blue" gutterBottom>
               * {renderRichText("**Thời lượng:**")} {course.duration} giờ
-            </Typography>
-            <Typography variant="body1" color="blue" gutterBottom>
-              * {renderRichText("**Giảng viên:**")} {course.instructor}
             </Typography>
           </CardContent>
           </Card>
