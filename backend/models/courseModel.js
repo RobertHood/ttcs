@@ -35,10 +35,6 @@ const courseSchema = mongoose.Schema({
             order: { type: Number }                       
         }
         ],
-    instructor: {
-        type: String,
-        required: true
-    },
     users_enrolled: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     duration: {
         type: Number,

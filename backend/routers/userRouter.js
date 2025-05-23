@@ -1,14 +1,18 @@
 const express = require('express');
 const router = require('express').Router();
 const userController = require('../controllers/userController');
-const {identifier} = require('../middlewares/identification');
+const { verifyUser, verifyAdmin } = require('../middlewares/authMiddleware');
 
-router.get('/me', identifier, userController.getMe);
-router.get('/all-users', identifier, userController.getAllUsers);
-router.get('/user-by-email',identifier, userController.getUserByEmail);
-router.get('/user-by-role', identifier, userController.getUserByRole);
-router.get('/user-by-id', identifier, userController.getUserById);
+router.get('/me', verifyUser, userController.getMe);
+router.get('/all-users', verifyUser, userController.getAllUsers);
+router.get('/user-by-email',verifyUser, userController.getUserByEmail);
+router.get('/user-by-role', verifyUser, userController.getUserByRole);
+router.get('/user-by-id', verifyUser, userController.getUserById);
 
-router.delete('/delete-user', identifier, userController.deleteUser);
-router.put('/update-user',identifier, userController.updateUser);
+router.delete('/delete-user', verifyUser, userController.deleteUser);
+router.put('/update-user',verifyUser, userController.updateUser);
+
+
+router.post('/add-xp', verifyUser, userController.addXP);
+
 module.exports = router;

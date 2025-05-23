@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { Menu, Mic } from '@mui/icons-material';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import PronunciationPractice from '../components/PronunciationPractice';
 import ChatbotPanel from '../components/ChatbotPanel';
@@ -22,38 +22,66 @@ import FinalTest from '../components/FinalTest';
 import Header from '../components/header';
 import Footer from '../components/footer';
 
-const lessons = [
-  { id: 'pronunciation', title: 'Pronunciation Practice', component: <PronunciationPractice /> },
-  { id: 'conversation', title: 'Daily Conversation', component: <ChatbotPanel /> },
-  { id: 'grammar', title: 'Grammar Practice', component: <GrammarExercise /> },
-  { id: 'finalTest', title: 'Final Test', component: <FinalTest /> }
-];
+const lessonComponentMap: Record<string, React.ComponentType<any>> = {
+  pronunciation: PronunciationPractice,
+  grammar: GrammarExercise,
+  chatbot: ChatbotPanel,
+  final: FinalTest,
+};
 
 export default function Learning() {
+  const { id } = useParams();
   const theme = useTheme();
   const navigate = useNavigate();
-
+  const [roadmap, setRoadmap] = useState<any[]>([]);
+  const [lessons, setLessons] = useState<any[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState(lessons[0].id);
+  const [activeTab, setActiveTab] = useState<string>('');
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+
+  async function addXPToUser(amount = 10) {
+  await fetch('http://localhost:8001/api/user/add-xp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ xp: amount }),
+  });
+}
+
+ useEffect(() => {
+  fetch(`http://localhost:8001/api/english/course/${id}`)
+    .then(res => res.json())
+    .then(data => {
+      const roadmapData = data.data.roadmap || [];
+      setRoadmap(roadmapData);
+      const allLessons = roadmapData.flatMap((section: any) => section.lessons || []);
+      const uniqueLessons = Array.from(new Map(allLessons.map((l: any) => [l._id, l])).values());
+      setLessons(uniqueLessons);
+      if (uniqueLessons.length > 0) setActiveTab(uniqueLessons[0]._id);
+    });
+}, [id]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
-  const handleNextLesson = () => {
-    const currentIndex = lessons.findIndex(lesson => lesson.id === activeTab);
-    const nextLesson = lessons[currentIndex + 1];
-    if (nextLesson) {
-      setActiveTab(nextLesson.id);
-    } else if (activeTab === 'finalTest') {
-      setShowCompletionModal(true);
-    }    
-  };
+  const handleNextLesson = async () => {
+  await addXPToUser(10);
+  const currentIndex = lessons.findIndex(lesson => lesson._id === activeTab);
+  const nextLesson = lessons[currentIndex + 1];
+  if (nextLesson) {
+    setActiveTab(nextLesson._id);
+  } else {
+    setShowCompletionModal(true);
+  }
+};
 
-  const currentIndex = lessons.findIndex(lesson => lesson.id === activeTab);
-  const progress = ((currentIndex + 1) / lessons.length) * 100;
-  const activeComponent = lessons[currentIndex]?.component;
+  const currentIndex = lessons.findIndex(lesson => lesson._id === activeTab);
+  const progress = lessons.length > 0 ? ((currentIndex + 1) / lessons.length) * 100 : 0;;
+  const lessonType = lessons[currentIndex]?.category;
+  const LessonComponent = lessonComponentMap[lessonType];
+
+  const activeComponent = LessonComponent ? <LessonComponent lesson={lessons[currentIndex]} /> : null;
 
   useEffect(() => {
     const title = lessons[currentIndex]?.title || 'Lesson';
@@ -61,26 +89,33 @@ export default function Learning() {
   }, [activeTab]);
 
   const drawerContent = (
-    <Box sx={{ width: 250, p: 2 }}>
-      <Typography variant="h6" sx={{ mb: 2 }}>
-        Course Content
-      </Typography>
-      {lessons.map((lesson) => (
-        <Button
-          key={lesson.id}
-          fullWidth
-          sx={{
-            justifyContent: 'flex-start',
-            mb: 1,
-            bgcolor: activeTab === lesson.id ? theme.palette.action.selected : 'transparent',
-          }}
-          onClick={() => setActiveTab(lesson.id)}
-        >
-          {lesson.title}
-        </Button>
-      ))}
-    </Box>
-  );
+  <Box sx={{ width: 250, p: 2 }}>
+    <Typography variant="h6" sx={{ mb: 2 }}>
+      Course Content
+    </Typography>
+    {roadmap.map((section: any, sidx: number) => (
+      <Box key={sidx} sx={{ mb: 2 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 1 }}>
+          {section.title}
+        </Typography>
+        {(section.lessons || []).map((lesson: any) => (
+          <Button
+            key={lesson._id}
+            fullWidth
+            sx={{
+              justifyContent: 'flex-start',
+              mb: 1,
+              bgcolor: activeTab === lesson._id ? theme.palette.action.selected : 'transparent',
+            }}
+            onClick={() => setActiveTab(lesson._id)}
+          >
+            {lesson.title}
+          </Button>
+        ))}
+      </Box>
+    ))}
+  </Box>
+);
 
   return (
     <>
