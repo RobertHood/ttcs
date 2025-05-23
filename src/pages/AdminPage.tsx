@@ -777,13 +777,11 @@ const LessonsView = () => {
         showSnackbar('Please fill in all required fields', 'error');
         return;
       }
-      
-      // Validate exercises
+       
       const validExercises = formData.exercise.filter(
         ex => ex.question && ex.answers.some(a => a)
       );
       
-      // Ensure correctAnswer is set for each exercise
       const processedExercises = validExercises.map(ex => ({
         ...ex,
         correctAnswer: ex.correctAnswer || ex.answers.find(a => a) || ''
@@ -791,6 +789,7 @@ const LessonsView = () => {
       
       const lessonData = {
         ...formData,
+        category: formData.category.toLowerCase(),
         exercise: processedExercises
       };
       
