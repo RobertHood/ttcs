@@ -157,3 +157,16 @@ exports.getMe = async (req, res) => {
     res.status(401).json({ success: false, message: 'Invalid token' });
   }
 }
+
+exports.addXP = async (req, res) => {
+    const userId = req.user._id;
+    const { xp } = req.body;
+  try {
+    const user = await User.findById(userId);
+    user.userXP = (user.userXP || 0) + xp;
+    await user.save();
+    res.json({ success: true, xp: user.userXP });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
