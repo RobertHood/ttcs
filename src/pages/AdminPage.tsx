@@ -57,6 +57,7 @@ import {
   Person,
   MenuBook,
   Class,
+  Home
 } from '@mui/icons-material';
 import { categoryService, type Category } from '../config/categoryService';
 import { courseService, type Course } from '../config/courseService';
@@ -78,6 +79,7 @@ export default function AdminPage() {
     { text: 'Khóa học', icon: <LibraryBooks />, view: 'courses' },
     { text: 'Danh mục', icon: <CategoryIcon />, view: 'categories' },
     { text: 'Cài đặt', icon: <Settings />, view: 'settings' },
+    { text: 'Về trang chủ', icon: <Home/>, view: 'home'}
   ];
 
   const handleDrawerToggle = () => {
@@ -86,6 +88,8 @@ export default function AdminPage() {
 
   const renderView = () => {
     switch (activeView) {
+      case 'home':
+        return <HomeView/>
       case 'dashboard':
         return <DashboardView />;
       case 'users':
@@ -97,6 +101,14 @@ export default function AdminPage() {
       default:
         return <DashboardView />;
     }
+  };
+
+  const HomeView = () => {
+    const navigate = useNavigate();
+
+    useEffect(() => {
+      navigate('/');
+    },[navigate])
   };
 
   return (
