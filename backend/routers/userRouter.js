@@ -14,5 +14,6 @@ router.put('/update-user',verifyUser, userController.updateUser);
 
 
 router.post('/add-xp', verifyUser, userController.addXP);
+router.post('/add-course-in-progress', verifyUser, userController.addCourseInProgress);
 
 module.exports = router;

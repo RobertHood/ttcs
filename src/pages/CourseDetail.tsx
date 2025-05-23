@@ -20,6 +20,21 @@ export default function CourseDetail() {
   const navigate = useNavigate();
   const [courseInProgress, setCourseInProgress] = useState<any[]>([]);
 
+  const handleRegisterCourse = async () => {
+  const response = await fetch('http://localhost:8001/api/user/add-course-in-progress', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ courseId: id }),
+  });
+  const data = await response.json();
+  if (data.success) {
+    // Optionally show a success message or update UI
+    alert('Đăng ký học thành công!');
+  } else {
+    alert(data.message || 'Đăng ký thất bại!');
+  }
+};
 
   function renderRichText(text: string): JSX.Element[] {
   const pattern = /(\*\*.*?\*\*|\*[^*]+\*|_[^_]+_|__[^_]+__|`[^`]+`)/g;
@@ -188,7 +203,7 @@ export default function CourseDetail() {
           ) : (
             <Button
               variant="contained"
-              onClick={() => navigate(`/learning/${course._id}`)}
+              onClick={handleRegisterCourse}
               sx={{ mt: 3, borderRadius: '15px' }}
             >
               Đăng ký học

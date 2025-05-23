@@ -1,5 +1,6 @@
 const User = require('../models/usersModel.js');
 const jwt = require("jsonwebtoken");
+const course = require('../models/courseModel.js');
 
 exports.getAllUsers = async (req, res) => {
     try {
@@ -148,7 +149,7 @@ exports.getMe = async (req, res) => {
     if (!token) return res.status(401).json({ success: false, message: 'No token' });
 
     const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
-    const user = await User.findById(decoded.userID); 
+    const user = await User.findById(decoded.userID).populate('CourseInProgress').populate('courseEnrolled'); 
 
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
@@ -168,5 +169,22 @@ exports.addXP = async (req, res) => {
     res.json({ success: true, xp: user.userXP });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+exports.addCourseInProgress = async (req, res) => {
+  try {
+    const userId = req.user.userID;
+    const { courseId } = req.body;
+    const user = await User.findById(userId);
+    if (!user.CourseInProgress.includes(courseId)) {
+      user.CourseInProgress.push(courseId);
+      await user.save();
+    }
+
+    res.json({ success: true, CourseInProgress: user.CourseInProgress });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
