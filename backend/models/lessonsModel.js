@@ -37,12 +37,6 @@ const lessonSchema = mongoose.Schema({
             }
         }  
     ],
-    category: {
-        type: String,
-        enum: ['Listening', 'Speaking', 'Writing', 'Reading', 'Grammar', 'Vocabulary'],
-        required: [true, "Category is required"],
-        trim: true,
-    },
 }, {
     timestamps: true
 });

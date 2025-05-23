@@ -89,7 +89,7 @@ export default function RegisterCourse() {
                         onClick={() => navigate(`/course/${course._id}`)}
                         style={{ borderRadius: '15px' }}
                       >
-                        Đăng ký
+                        Chi tiết khóa học
                       </Button>
                     </CardContent>
                   </Card>

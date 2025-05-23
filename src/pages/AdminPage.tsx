@@ -1190,7 +1190,6 @@ const LessonsView = () => {
 
 const CoursesView = () => {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -1203,8 +1202,6 @@ const CoursesView = () => {
   // New course form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [instructor, setInstructor] = useState('');
   const [duration, setDuration] = useState<number>(0);
   const [content, setContent] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -1214,7 +1211,6 @@ const CoursesView = () => {
   // Load courses and categories on component mount
   useEffect(() => {
     fetchCourses();
-    fetchCategories();
   }, []);
 
   const fetchCourses = async () => {
@@ -1232,21 +1228,9 @@ const CoursesView = () => {
     }
   };
 
-  const fetchCategories = async () => {
-    try {
-      const data = await categoryService.getAllCategories();
-      setCategories(data);
-    } catch (error: any) {
-      console.error('Error loading categories:', error);
-      showSnackbar('Không thể tải danh mục khóa học', 'error');
-    }
-  };
-
   const resetForm = () => {
     setTitle('');
     setDescription('');
-    setCategoryId('');
-    setInstructor('');
     setDuration(0);
     setContent('');
     setSelectedFile(null);
@@ -1270,8 +1254,6 @@ const CoursesView = () => {
     // Populate form with course data
     setTitle(course.title);
     setDescription(course.description);
-    setCategoryId(typeof course.category === 'string' ? course.category : course.category._id);
-    setInstructor(course.instructor);
     setDuration(course.duration);
     setContent(course.content);
     setSelectedFile(null);
@@ -1288,7 +1270,7 @@ const CoursesView = () => {
 
   const handleSubmit = async () => {
     // Validate form data
-    if (!title || !description || !categoryId || !instructor || !content || duration <= 0) {
+    if (!title || !description || !content || duration <= 0) {
       showSnackbar('Vui lòng điền đầy đủ thông tin khóa học', 'error');
       return;
     }
@@ -1302,8 +1284,6 @@ const CoursesView = () => {
       const formData = new FormData();
       formData.append('title', title);
       formData.append('description', description);
-      formData.append('category', categoryId);
-      formData.append('instructor', instructor);
       formData.append('duration', duration.toString());
       formData.append('content', content);
 
@@ -1368,11 +1348,6 @@ const CoursesView = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  const getCategoryName = (categoryId: string) => {
-    const category = categories.find(cat => cat._id === categoryId);
-    return category ? category.name : 'Unknown';
-  };
-
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
@@ -1402,8 +1377,6 @@ const CoursesView = () => {
             <TableRow>
               <TableCell>ID</TableCell>
               <TableCell>Tên khóa học</TableCell>
-              <TableCell>Danh mục</TableCell>
-              <TableCell>Giảng viên</TableCell>
               <TableCell>Thời lượng</TableCell>
               <TableCell align="right">Hành động</TableCell>
             </TableRow>
@@ -1424,12 +1397,6 @@ const CoursesView = () => {
                 <TableRow key={course._id}>
                   <TableCell>{course._id}</TableCell>
                   <TableCell>{course.title}</TableCell>
-                  <TableCell>
-                    {typeof course.category === 'string'  
-                      ? getCategoryName(course.category)
-                      : course.category.name}
-                  </TableCell>
-                  <TableCell>{course.instructor}</TableCell>
                   <TableCell>{course.duration} giờ</TableCell>
                   <TableCell align="right">
                     <IconButton 
@@ -1483,30 +1450,7 @@ const CoursesView = () => {
               onChange={(e) => setDescription(e.target.value)}
               required
             />
-            
-            <FormControl fullWidth required>
-              <InputLabel>Danh mục</InputLabel>
-              <Select
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                label="Danh mục"
-              >
-                {categories.map(category => (
-                  <MenuItem key={category._id} value={category._id}>
-                    {category.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            
-            <TextField
-              label="Giảng viên"
-              fullWidth
-              value={instructor}
-              onChange={(e) => setInstructor(e.target.value)}
-              required
-            />
-            
+      
             <TextField
               label="Thời lượng (giờ)"
               fullWidth
