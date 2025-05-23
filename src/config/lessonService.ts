@@ -94,8 +94,7 @@ class LessonService {
   async updateLesson(id: string, lessonData: LessonUpdateInput, audioFile?: File): Promise<ApiResponse<Lesson>> {
     try {
       const formData = new FormData();
-      
-      
+      console.log(lessonData)
       Object.entries(lessonData).forEach(([key, value]) => {
       if (key === 'exercise') {
         formData.append(key, JSON.stringify(value));
