@@ -19,6 +19,8 @@ export default function RegisterCourse() {
   const navigate = useNavigate();
   const [allCourses, setAllCourses] = useState<any[]>([]);
 
+  
+
   useEffect(() => {
     const fetchCourses = async () => {
       try {

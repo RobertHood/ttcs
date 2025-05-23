@@ -96,6 +96,10 @@ const userSchema = mongoose.Schema({
             type: Date,
         }   
     }],
+    loginActivity: {
+        type: [String],
+        default: []
+    }
 },{
     timestamps: true
 });

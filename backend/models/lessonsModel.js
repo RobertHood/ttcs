@@ -16,16 +16,16 @@ const lessonSchema = mongoose.Schema({
         required: [true, "Theory is required"],
         trim: true,
     },
-    audio: {
-        type: String,
-        trim: true,
-    },
     exercise: [
         {
             question: {
             type: String,
             required: [true, "Question is required"],
             trim: true
+            },
+            audio: {
+            type: String,
+            trim: true,
             },
             answers: {
             type: [String],

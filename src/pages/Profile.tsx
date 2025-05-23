@@ -37,16 +37,10 @@ import Footer from '../components/footer';
 import CalendarHeatmap from 'react-calendar-heatmap'
 import 'react-calendar-heatmap/dist/styles.css';
 
-
-const courseSuggestions = [
-  'Ngữ pháp cơ bản',
-  'Giao tiếp hàng ngày',
-  'Tiếng Anh thương mại',
-  'Viết học thuật',
-];
 export default function Profile() {
   const theme = useTheme();
   const [editOpen, setEditOpen] = useState(false);
+  const [loginActivity, setLoginActivity] = useState([]);
   const defaultUserData = {
     profileName: '',
     email: '',
@@ -71,6 +65,7 @@ export default function Profile() {
   const progressPercent = ((userData.userXP - xpForCurrentLevel) / (xpForNextLevel - xpForCurrentLevel)) * 100;
   useEffect(() => {
     fetchUserProfile();
+    fetchLoginActivity();
   }, []);
 
   const fetchUserProfile = async () => {
@@ -91,6 +86,24 @@ export default function Profile() {
     } catch (error) {
       setUserData(defaultUserData);
       console.error('Error fetching profile:', error);
+    }
+  };
+
+  const fetchLoginActivity = async () => {
+    try {
+      const response = await fetch('http://localhost:8001/api/auth/login-activity', {
+        credentials: 'include'
+      });
+      const data = await response.json();
+      if (response.ok && data.data) {
+        const activityData = data.data.map(date => ({ 
+                date: new Date(date).toISOString().split('T')[0], 
+                count: 1 
+            }));
+        setLoginActivity(activityData);
+      }
+    } catch (error) {
+      console.error('Error fetching login activity:', error);
     }
   };
 
@@ -196,16 +209,31 @@ export default function Profile() {
               </Typography>
               <Card sx={{ p: 2 }}>
                 <ResponsiveContainer width="1120px" height="100%">
-                  <CalendarHeatmap
-                  startDate={new Date('2016-01-01')}
-                  endDate={new Date('2016-12-31')}
-                  values={[
-                    { date: '2016-01-01', count: 12 },
-                    { date: '2016-01-22', count: 122 },
-                    { date: '2016-01-30', count: 38 },
-                    
-                  ]}
-                />
+                     <CalendarHeatmap
+                          startDate={new Date(new Date().setFullYear(new Date().getFullYear() - 1))}
+                          endDate={new Date()}
+                          values={loginActivity}
+                          classForValue={(value) => {
+                              if (!value) {
+                                  return 'color-empty';
+                              }
+                              return 'color-green';
+                          }}
+                          tooltipDataAttrs={(value) => {
+                              if (!value || !value.date) {
+                                  return {};
+                              }
+                              return {
+                                  'data-tooltip': `Logged in on ${value.date}`
+                              };
+                          }}
+                          showWeekdayLabels={true}
+                          onClick={(value) => {
+                              if (value) {
+                                  console.log(`Clicked on ${value.date}`);
+                              }
+                          }}
+                      />
                 </ResponsiveContainer>
               </Card>
             </Grid>

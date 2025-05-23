@@ -124,6 +124,12 @@ export default function Header() {
                   {user?.profileName}
                 </Button>
                 <Button
+                variant='outlined'
+                onClick={() => handleNavigation('/course')}
+                sx = {{ borderRadius: 2}}>
+                  Your Courses
+                </Button>
+                <Button
                   variant="outlined"
                   onClick={handleLogout}
                   sx={{ borderRadius: 2 }}

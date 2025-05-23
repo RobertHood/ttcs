@@ -1,45 +1,38 @@
 const lessons = require('../models/lessonsModel');
 
 exports.createLesson = async (req, res) => {
-
-    const { course, title, theory, exercise } = req.body;
-    const audioPath = req.file ? req.file.path : null;
-
-    try {
-        let { course, title, theory, category } = req.body;
-        let exercise = req.body.exercise;
-
-        // Parse exercise if it's a string (from JSON.stringify in frontend)
-        if (exercise && typeof exercise === 'string') {
-            try {
-                exercise = JSON.parse(exercise);
-            } catch (err) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'Invalid exercise data format' 
-                });
-            }
-        }
-
-        const newLesson = new lessons({
-            course,
-            title,
-            theory,
-            exercise,
-
-            audio: audioPath
-
-        });
-        
-        await newLesson.save();
-        res.status(201).json({ success: true, data: newLesson });
-    } catch (error) {
-        console.error(error);
-
-        res.status(500).json({ success: false, message: 'Failed to create lesson', error: error.message });
-
+  try {
+    let exercise = req.body.exercise;
+    if (typeof exercise === 'string') {
+      exercise = JSON.parse(exercise);
     }
-}
+
+    // Map từng audio file vào đúng exercise[i]
+    const filesMap = {};
+    req.files.forEach(file => {
+      filesMap[file.fieldname] = file.path;
+    });
+
+    const exerciseWithAudio = exercise.map((ex, i) => ({
+      ...ex,
+      audio: filesMap[`audio_${i}`] || null
+    }));
+
+    const newLesson = new lessons({
+      course: req.body.course,
+      title: req.body.title,
+      theory: req.body.theory,
+      category: req.body.category,
+      exercise: exerciseWithAudio
+    });
+
+    await newLesson.save();
+    res.status(201).json({ success: true, data: newLesson });
+  } catch (error) {
+    console.error('❌ Error saving lesson:', error);
+    res.status(500).json({ success: false, message: 'Failed to create lesson', error: error.message });
+  }
+};
 
 exports.getLessonById = async (req, res) => {
     const { id } = req.params;
@@ -75,8 +68,8 @@ exports.updateLesson = async (req, res) => {
   try {
     let updateData = { ...req.body };
 
-    // Parse exercise if it's a string
-    if (updateData.exercise && typeof updateData.exercise === 'string') {
+    // Parse exercise nếu là string
+    if (typeof updateData.exercise === 'string') {
       try {
         updateData.exercise = JSON.parse(updateData.exercise);
       } catch (err) {
@@ -84,11 +77,23 @@ exports.updateLesson = async (req, res) => {
       }
     }
 
-    // If using multer for audio uploads
-    if (req.file) {
-      updateData.audio = req.file.path;
+    // Map audio files vào exercise
+    if (Array.isArray(req.files)) {
+      const filesMap = {};
+      req.files.forEach(file => {
+        filesMap[file.fieldname] = file.path;
+      });
+
+      // 👇 Gắn audio đúng vào exercise[i]
+      if (Array.isArray(updateData.exercise)) {
+        updateData.exercise = updateData.exercise.map((ex, i) => ({
+          ...ex,
+          audio: filesMap[`audio_${i}`] || ex.audio || null
+        }));
+      }
     }
 
+    // Update Mongo
     const lesson = await lessons.findByIdAndUpdate(
       req.params.id,
       updateData,
@@ -98,11 +103,14 @@ exports.updateLesson = async (req, res) => {
     if (!lesson) {
       return res.status(404).json({ success: false, message: 'Lesson not found' });
     }
+
     res.json({ success: true, data: lesson });
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    console.error('❌ Update lesson error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update lesson', error: error.message });
   }
 };
+
 
 exports.deleteLesson = async (req, res) => {
     try {

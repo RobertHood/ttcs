@@ -107,6 +107,12 @@ exports.login = async (req, res) => {
             message: "User logged in successfully",
             token
         });
+
+        await User.findByIdAndUpdate(existingUser._id, {
+            $addToSet: {
+            loginActivity: today
+        }
+        }, { new: true });
     }catch(error) {
         console.error(error);
     }
@@ -320,16 +326,16 @@ exports.sendForgotPasswordCode = async (req, res) => {
 };
 
 exports.verifyForgotPasswordCode = async (req, res) => {
-	const { email, providedCode, newPassword } = req.body;
+	const { email, code, password } = req.body;
 	try {
-		const { error, value } = acceptCodeSchema.validate({ email, providedCode });
+		const { error, value } = acceptCodeSchema.validate({ email, code });
 		if (error) {
 			return res
 				.status(401)
 				.json({ success: false, message: error.details[0].message });
 		}
 
-		const codeValue = providedCode.toString();
+		const codeValue = code.toString();
 		const existingUser = await User.findOne({ email }).select(
 			'+forgotPasswordCode +forgotPasswordCodeValidation'
 		);
@@ -362,7 +368,7 @@ exports.verifyForgotPasswordCode = async (req, res) => {
 		);
 
 		if (hashedCodeValue === existingUser.forgotPasswordCode) {
-			const hashedPassword = await doHash(newPassword,12);
+			const hashedPassword = await doHash(password,12);
             existingUser.password = hashedPassword;
 			existingUser.forgotPasswordCode = undefined;
 			existingUser.forgotPasswordCodeValidation = undefined;
@@ -429,6 +435,19 @@ exports.updateProfile = async (req, res) => {
             return res.status(404).json({ status: 'fail', message: 'User not found' });
         }
         res.json({ status: 'success', data: user });
+    } catch (error) {
+        res.status(500).json({ status: 'fail', message: 'Server error' });
+    }
+};
+
+exports.getLoginActivity = async (req, res) => {
+    try {
+        const { userID } = req.user;
+        const user = await User.findById(userID).select('loginActivity');
+        if (!user) {
+            return res.status(404).json({ status: 'fail', message: 'User not found' });
+        }
+        res.json({ status: 'success', data: user.loginActivity });
     } catch (error) {
         res.status(500).json({ status: 'fail', message: 'Server error' });
     }

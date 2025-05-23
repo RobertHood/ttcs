@@ -8,22 +8,52 @@ import {
   Typography,
   Link,
   useTheme
+  
 } from '@mui/material';
 import { motion } from 'framer-motion';
+import Snackbar from '@mui/material/Snackbar';
+import MuiAlert from '@mui/material/Alert';
 
 export default function ForgotPassword() {
   const theme = useTheme();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Xử lý logic gửi email reset mật khẩu
-    navigate('/login'); 
+    try {
+        const response = await fetch(`http://localhost:8001/api/auth/send-forgot-password-code`,{
+          method: 'PATCH',
+          headers: {
+            "Content-Type" : "application/json"
+          },
+          body: JSON.stringify({email})
+        });
+        const data = await response.json();
+        console.log(data);
+        if (response.ok || data.data) {
+          setSnackbarOpen(true);
+          setTimeout(() => navigate('/reset-password'), 3000);
+          }
+      } catch (error) {
+        console.error(error);
+      }
+    // navigate('/login'); 
   };
 
   return (
+    
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={() => setSnackbarOpen(false)}
+      >
+        <MuiAlert onClose={() => setSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>
+          Code sent to your mail! Navigating...
+        </MuiAlert>
+      </Snackbar>
       <Container maxWidth="xs" sx={{ py: 8 }}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -52,7 +82,7 @@ export default function ForgotPassword() {
             </Typography>
 
             <Typography variant="body1" sx={{ mb: 3, color: 'text.secondary' }}>
-              Enter your email and we'll send you a link to reset your password
+              Enter your email and we'll send you a code to reset your password
             </Typography>
 
             <form onSubmit={handleSubmit}>
@@ -88,7 +118,7 @@ export default function ForgotPassword() {
                     background: `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
                   }}
                 >
-                  Send Reset Link
+                  Send Reset Code
                 </Button>
               </motion.div>
 
