@@ -82,7 +82,7 @@ export default function Learning() {
   const LessonComponent = lessonComponentMap[lessonType];
 
   const activeComponent = LessonComponent ? <LessonComponent lesson={lessons[currentIndex]} /> : null;
-
+  console.log(lessons)
   useEffect(() => {
     const title = lessons[currentIndex]?.title || 'Lesson';
     document.title = `${title} | English Learning`;
