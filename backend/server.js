@@ -32,7 +32,7 @@ app.use(express.json());
 app.use(cors({
   origin: 'http://localhost:5173', // Cổng của frontend
   credentials: true, 
-  methods: ['GET'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Range'], // Cho phép Range header
   exposedHeaders: ['Content-Range', 'Accept-Ranges']
 }));
