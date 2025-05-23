@@ -803,7 +803,7 @@ const LessonsView = () => {
           exerciseAudioFiles
         );
       }
-      console.log('📦 Audio files to upload:', exerciseAudioFiles);
+      console.log('Audio files to upload:', exerciseAudioFiles);
       exerciseAudioFiles.forEach((f, i) => {
         console.log(`audio_${i}:`, f?.name || 'null');
       });

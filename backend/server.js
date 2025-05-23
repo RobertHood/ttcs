@@ -31,6 +31,7 @@ app.use(express.json());
 
 app.use(cors({
   origin: 'http://localhost:5173', // Cổng của frontend
+  credentials: true, 
   methods: ['GET'],
   allowedHeaders: ['Content-Type', 'Range'], // Cho phép Range header
   exposedHeaders: ['Content-Range', 'Accept-Ranges']
@@ -41,11 +42,6 @@ app.use('/avatars', express.static(path.join(__dirname, 'public/avatars')));
 
 app.use(helmet());
 app.use(cookieParser());
-const corsOptions = {
-  origin: '*',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-};
 app.use((req, res, next) => {
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   next();
