@@ -73,16 +73,31 @@ exports.getAllLessons = async (req, res) => {
 
 exports.updateLesson = async (req, res) => {
   try {
+    let updateData = { ...req.body };
+
+    // Parse exercise if it's a string
+    if (updateData.exercise && typeof updateData.exercise === 'string') {
+      try {
+        updateData.exercise = JSON.parse(updateData.exercise);
+      } catch (err) {
+        return res.status(400).json({ success: false, message: 'Invalid exercise data format' });
+      }
+    }
+
+    // If using multer for audio uploads
+    if (req.file) {
+      updateData.audio = req.file.path;
+    }
+
     const lesson = await lessons.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     );
-    
+
     if (!lesson) {
       return res.status(404).json({ success: false, message: 'Lesson not found' });
     }
-    console.log(lesson);
     res.json({ success: true, data: lesson });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });

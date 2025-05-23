@@ -801,7 +801,6 @@ const LessonsView = () => {
           lessonData as any,
           audioFile || undefined
         );
-        console.log(response);
       } else {
         response = await lessonService.createLesson(lessonData as any, audioFile || undefined);
       }

@@ -36,7 +36,7 @@ router.post('/create-category', categoryController.createCategory);
 router.get('/all-lessons', lessonsController.getAllLessons);
 router.get('/lesson/:id', lessonsController.getLessonById);
 router.post('/create-lesson', upload.single('audio'), lessonsController.createLesson);
-router.put('/lesson/:id', lessonsController.updateLesson);
+router.put('/lesson/:id',upload.single('audio'), lessonsController.updateLesson);
 router.delete('/lesson/:id', lessonsController.deleteLesson);
 
 module.exports = router;
