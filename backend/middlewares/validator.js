@@ -61,7 +61,7 @@ exports.acceptCodeSchema = Joi.object({
         minDomainSegments: 2,
         tlds: { allow: ['com', 'net', 'org'] }
     }),
-    providedCode: Joi.number().required()
+    code: Joi.number().required()
 });
 
 exports.changePasswordSchema = Joi.object({

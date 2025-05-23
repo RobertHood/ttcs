@@ -320,16 +320,16 @@ exports.sendForgotPasswordCode = async (req, res) => {
 };
 
 exports.verifyForgotPasswordCode = async (req, res) => {
-	const { email, providedCode, newPassword } = req.body;
+	const { email, code, password } = req.body;
 	try {
-		const { error, value } = acceptCodeSchema.validate({ email, providedCode });
+		const { error, value } = acceptCodeSchema.validate({ email, code });
 		if (error) {
 			return res
 				.status(401)
 				.json({ success: false, message: error.details[0].message });
 		}
 
-		const codeValue = providedCode.toString();
+		const codeValue = code.toString();
 		const existingUser = await User.findOne({ email }).select(
 			'+forgotPasswordCode +forgotPasswordCodeValidation'
 		);
@@ -362,7 +362,7 @@ exports.verifyForgotPasswordCode = async (req, res) => {
 		);
 
 		if (hashedCodeValue === existingUser.forgotPasswordCode) {
-			const hashedPassword = await doHash(newPassword,12);
+			const hashedPassword = await doHash(password,12);
             existingUser.password = hashedPassword;
 			existingUser.forgotPasswordCode = undefined;
 			existingUser.forgotPasswordCodeValidation = undefined;
