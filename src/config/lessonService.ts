@@ -14,6 +14,7 @@ export type Lesson = {
     question: string;
     answers: string[];
     correctAnswer: string;
+    audio?: string; // <-- Added audio field for each exercise
   }>;
   category: 'Pronunciation' | 'Grammar' | 'Chatbot' | 'Final';
   createdAt?: string;
@@ -31,7 +32,7 @@ type ApiResponse<T> = {
 
 class LessonService {
   private baseUrl = 'http://localhost:8001/api/english';
-  
+
   async getAllLessons(): Promise<ApiResponse<Lesson[]>> {
     try {
       const response = await axiosInstance.get(`${this.baseUrl}/all-lessons`);
@@ -40,7 +41,7 @@ class LessonService {
       throw this.handleError(error);
     }
   }
-  
+
   async getLessonById(id: string): Promise<ApiResponse<Lesson>> {
     try {
       const response = await axiosInstance.get(`${this.baseUrl}/lesson/${id}`);
@@ -49,7 +50,7 @@ class LessonService {
       throw this.handleError(error);
     }
   }
-  
+
   async getLessonsByCategory(category: string): Promise<ApiResponse<Lesson[]>> {
     try {
       const response = await axiosInstance.get(`${this.baseUrl}/lessons-by-category`, {
@@ -60,12 +61,11 @@ class LessonService {
       throw this.handleError(error);
     }
   }
-  
-  async createLesson(lessonData: LessonInput, audioFile?: File): Promise<ApiResponse<Lesson>> {
+
+  async createLesson(lessonData: LessonInput, audioFiles: File[] = []): Promise<ApiResponse<Lesson>> {
     try {
       const formData = new FormData();
-      
-      // Append lesson data
+
       Object.entries(lessonData).forEach(([key, value]) => {
         if (key === 'exercise') {
           formData.append(key, JSON.stringify(value));
@@ -73,68 +73,63 @@ class LessonService {
           formData.append(key, value as string);
         }
       });
-      
-      // Append audio file if provided
-      if (audioFile) {
-        formData.append('audio', audioFile);
-      }
-      
+
+      audioFiles.forEach((file, index) => {
+        formData.append(`audio_${index}`, file);
+      });
+
       const response = await axiosInstance.post(`${this.baseUrl}/create-lesson`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
-      
+
       return response.data;
     } catch (error) {
       throw this.handleError(error);
     }
   }
-  
-  async updateLesson(id: string, lessonData: LessonUpdateInput, audioFile?: File): Promise<ApiResponse<Lesson>> {
+
+  async updateLesson(id: string, lessonData: LessonUpdateInput, audioFiles: File[] = []): Promise<ApiResponse<Lesson>> {
     try {
       const formData = new FormData();
-      console.log(lessonData)
       Object.entries(lessonData).forEach(([key, value]) => {
-      if (key === 'exercise') {
-        formData.append(key, JSON.stringify(value));
-      } else if (key === 'category' && typeof value === 'string') {
-        formData.append(key, value.toLowerCase());
-      } else if (value !== undefined) {
-        formData.append(key, value as string);
-      }
-    });
-    
-      if (audioFile) {
-        formData.append('audio', audioFile);
-      }
-      
+        if (key === 'exercise') {
+          formData.append(key, JSON.stringify(value));
+        } else if (key === 'category' && typeof value === 'string') {
+          formData.append(key, value.toLowerCase());
+        } else if (value !== undefined) {
+          formData.append(key, value as string);
+        }
+      });
+
+      audioFiles.forEach((file, index) => {
+        formData.append(`audio_${index}`, file);
+      });
+
       const response = await axiosInstance.put(`${this.baseUrl}/lesson/${id}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
-      
+
       return response.data;
     } catch (error) {
       throw this.handleError(error);
     }
   }
-  
+
   async deleteLesson(id: string): Promise<ApiResponse<null>> {
     try {
-      const response = await axiosInstance.delete(`${this.baseUrl}/lesson/${id}`, {
-        method: 'DELETE'
-      });
+      const response = await axiosInstance.delete(`${this.baseUrl}/lesson/${id}`);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
     }
   }
-  
+
   private handleError(error: any): Error {
     if (error.response) {
-     
       return new Error(error.response.data.message || 'An error occurred with the response');
     } else if (error.request) {
       return new Error('No response received from server');
@@ -144,4 +139,4 @@ class LessonService {
   }
 }
 
-export const lessonService = new LessonService(); 
+export const lessonService = new LessonService();

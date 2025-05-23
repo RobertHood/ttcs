@@ -681,7 +681,7 @@ const LessonsView = () => {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [selectedLessonId, setSelectedLessonId] = useState('');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
-  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [exerciseAudioFiles, setExerciseAudioFiles] = useState<(File | null)[]>([]);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -736,7 +736,7 @@ const LessonsView = () => {
       category: 'Grammar',
       exercise: [{ question: '', answers: ['', '', '', ''], correctAnswer: '' }]
     });
-    setAudioFile(null);
+    setExerciseAudioFiles([null]);
     setExerciseTab(0);
     setSelectedLesson(null);
     setIsEditing(false);
@@ -765,60 +765,61 @@ const LessonsView = () => {
     setOpenDialog(true);
   };
   
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      setAudioFile(event.target.files[0]);
-    }
-  };
-  
   const handleSubmit = async () => {
     try {
       if (!formData.course || !formData.title || !formData.theory || !formData.category) {
-        showSnackbar('Please fill in all required fields', 'error');
+        showSnackbar('Vui lòng điền đầy đủ thông tin bắt buộc', 'error');
         return;
       }
-       
+
+      // Lọc và chuẩn hóa dữ liệu exercise
       const validExercises = formData.exercise.filter(
-        ex => ex.question && ex.answers.some(a => a)
+        ex => ex.question && ex.answers.some(a => a.trim() !== '')
       );
-      
+
       const processedExercises = validExercises.map(ex => ({
         ...ex,
-        correctAnswer: ex.correctAnswer || ex.answers.find(a => a) || ''
+        correctAnswer: ex.correctAnswer || ex.answers.find(a => a.trim() !== '') || ''
       }));
-      
+
+      // Tạo lessonData dùng để gửi
       const lessonData = {
         ...formData,
         category: formData.category.toLowerCase(),
         exercise: processedExercises
       };
-      
+
       let response;
-      
+
       if (isEditing && selectedLesson) {
         response = await lessonService.updateLesson(
           selectedLesson._id,
-          lessonData as any,
-          audioFile || undefined
+          lessonData,
+          exerciseAudioFiles
         );
       } else {
-        response = await lessonService.createLesson(lessonData as any, audioFile || undefined);
-      }
-      
-      if (response.success) {
-        showSnackbar(
-          isEditing ? 'Lesson updated successfully' : 'Lesson created successfully',
-          'success'
+        response = await lessonService.createLesson(
+          lessonData,
+          exerciseAudioFiles
         );
+      }
+      console.log('Audio files to upload:', exerciseAudioFiles);
+      exerciseAudioFiles.forEach((f, i) => {
+        console.log(`audio_${i}:`, f?.name || 'null');
+      });
+
+      if (response.success) {
+        showSnackbar(isEditing ? 'Cập nhật bài học thành công' : 'Tạo bài học thành công', 'success');
         setOpenDialog(false);
         resetForm();
         fetchLessons();
       } else {
-        showSnackbar(response.message || 'Operation failed', 'error');
+        showSnackbar(response.message || 'Thao tác thất bại', 'error');
       }
+
     } catch (error: any) {
       console.error('Error saving lesson:', error);
-      showSnackbar(error.message || 'An error occurred', 'error');
+      showSnackbar(error.message || 'Đã xảy ra lỗi khi lưu bài học', 'error');
     }
   };
   
@@ -872,6 +873,7 @@ const LessonsView = () => {
       ]
     }));
     setExerciseTab(formData.exercise.length);
+    setExerciseAudioFiles(prev => [...prev, null]);
   };
   
   const handleRemoveExercise = (index: number) => {
@@ -881,6 +883,11 @@ const LessonsView = () => {
       setFormData(prev => ({ ...prev, exercise: updatedExercises }));
       setExerciseTab(Math.min(exerciseTab, updatedExercises.length - 1));
     }
+    setExerciseAudioFiles(prev => {
+      const updated = [...prev];
+      updated.splice(index, 1);
+      return updated;
+    });
   };
   
   const handleChangeExercise = (index: number, field: string, value: string) => {
@@ -1060,19 +1067,6 @@ const LessonsView = () => {
               sx={{ mb: 2 }}
             />
             
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Audio (Tùy chọn)
-              </Typography>
-              <input
-                accept="audio/*"
-                id="audio-file"
-                type="file"
-                onChange={handleFileChange}
-                style={{ display: 'block', marginTop: 8 }}
-              />
-            </Box>
-            
             <Divider sx={{ my: 3 }} />
             
             <Typography variant="h6" gutterBottom>
@@ -1115,6 +1109,22 @@ const LessonsView = () => {
                   required
                   sx={{ mb: 2 }}
                 />
+
+                <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2">Audio cho câu hỏi {exIndex + 1} (Tùy chọn)</Typography>
+                      <input
+                        accept="audio/*"
+                        type="file"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          setExerciseAudioFiles(prev => {
+                            const updated = [...prev];
+                            updated[exIndex] = file;
+                            return updated;
+                          });
+                        }}
+                      />
+                    </Box>
                 
                 {ex.answers.map((answer, aIdx) => (
                   <Box key={aIdx} sx={{ display: 'flex', mb: 2, alignItems: 'center' }}>
