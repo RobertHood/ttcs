@@ -72,21 +72,14 @@ exports.getAllLessons = async (req, res) => {
 }
 
 exports.updateLesson = async (req, res) => {
-  try {
-    const lesson = await lessons.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
-    
-    if (!lesson) {
-      return res.status(404).json({ success: false, message: 'Lesson not found' });
+    try {
+        const updated = await lessons.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!updated) return res.status(404).json({ success: false, message: 'Lesson not found' });
+        res.status(200).json({ success: true, data: updated });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Server error' });
     }
-    console.log(lesson);
-    res.json({ success: true, data: lesson });
-  } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
-  }
 };
 
 exports.deleteLesson = async (req, res) => {

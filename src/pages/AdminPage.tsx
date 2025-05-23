@@ -802,7 +802,6 @@ const LessonsView = () => {
           lessonData as any,
           audioFile || undefined
         );
-        console.log(response);
       } else {
         response = await lessonService.createLesson(lessonData as any, audioFile || undefined);
       }
@@ -1042,7 +1041,7 @@ const LessonsView = () => {
                 label="Loại bài học"
                 required
               >
-                {['Pronunciation', 'Grammar', 'Chatbot', 'Final'].map((cat) => (
+                {['Listening', 'Speaking', 'Writing', 'Reading', 'Grammar', 'Vocabulary'].map((cat) => (
                   <MenuItem key={cat} value={cat}>
                     {cat}
                   </MenuItem>

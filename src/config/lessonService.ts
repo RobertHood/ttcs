@@ -15,7 +15,7 @@ export type Lesson = {
     answers: string[];
     correctAnswer: string;
   }>;
-  category: 'Pronunciation' | 'Grammar' | 'Chatbot' | 'Final';
+  category: 'Listening' | 'Speaking' | 'Writing' | 'Reading' | 'Grammar' | 'Vocabulary';
   createdAt?: string;
   updatedAt?: string;
 };
@@ -95,22 +95,21 @@ class LessonService {
     try {
       const formData = new FormData();
       
-      
+      // Append lesson data
       Object.entries(lessonData).forEach(([key, value]) => {
-      if (key === 'exercise') {
-        formData.append(key, JSON.stringify(value));
-      } else if (key === 'category' && typeof value === 'string') {
-        formData.append(key, value.toLowerCase());
-      } else if (value !== undefined) {
-        formData.append(key, value as string);
-      }
-    });
-    
+        if (key === 'exercise') {
+          formData.append(key, JSON.stringify(value));
+        } else if (value !== undefined) {
+          formData.append(key, value as string);
+        }
+      });
+      
+      // Append audio file if provided
       if (audioFile) {
         formData.append('audio', audioFile);
       }
       
-      const response = await axiosInstance.put(`${this.baseUrl}/lesson/${id}`, formData, {
+      const response = await axiosInstance.put(`${this.baseUrl}/update-lesson/${id}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -124,9 +123,7 @@ class LessonService {
   
   async deleteLesson(id: string): Promise<ApiResponse<null>> {
     try {
-      const response = await axiosInstance.delete(`${this.baseUrl}/lesson/${id}`, {
-        method: 'DELETE'
-      });
+      const response = await axiosInstance.delete(`${this.baseUrl}/delete-lesson/${id}`);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -135,11 +132,13 @@ class LessonService {
   
   private handleError(error: any): Error {
     if (error.response) {
-     
+      // The request was made but the server responded with an error
       return new Error(error.response.data.message || 'An error occurred with the response');
     } else if (error.request) {
+      // The request was made but no response was received
       return new Error('No response received from server');
     } else {
+      // Something happened in setting up the request
       return new Error(error.message || 'An unexpected error occurred');
     }
   }

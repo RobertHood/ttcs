@@ -37,11 +37,6 @@ const lessonSchema = mongoose.Schema({
             }
         }  
     ],
-    category: {
-        type: String,
-        enum: ['pronunciation', 'grammar', 'chatbot', 'final'],
-        required: [true, "Type is required"]
-    },
 }, {
     timestamps: true
 });
