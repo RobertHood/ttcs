@@ -203,3 +203,24 @@ exports.updateCourseRoadmap = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
+
+exports.completeCourse = async (req, res) => {
+    try {
+        const { userID } = req.user;
+        const { courseID } = req.body;
+
+        const user = await User.findByIdAndUpdate(
+            userID,
+            { $addToSet: { courseEnrolled: courseID } },
+            { new: true }
+        );
+
+        if (!user) {
+            return res.status(404).json({ status: 'fail', message: 'User not found' });
+        }
+
+        res.json({ status: 'success', data: user });
+    } catch (error) {
+        res.status(500).json({ status: 'fail', message: 'Server error' });
+    }
+};

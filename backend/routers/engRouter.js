@@ -27,6 +27,7 @@ router.get('/course/:id', courseController.getCourseById);
 router.post('/enroll-course', verifyUser, courseController.enrollInCourse);
 router.put('/course/:id', verifyUser, verifyAdmin, courseController.updateCourse);
 router.delete('/course/:id', verifyUser, verifyAdmin, courseController.deleteCourse);
+router.post('/complete-course', verifyUser, courseController.completeCourse);
 
 //category controller
 router.get('/all-categories',  categoryController.getAllCategories);

@@ -29,6 +29,8 @@ const lessonComponentMap: Record<string, React.ComponentType<any>> = {
   final: FinalTest,
 };
 
+
+
 export default function Learning() {
   const { id } = useParams();
   const theme = useTheme();
@@ -66,14 +68,32 @@ export default function Learning() {
   };
 
   const handleNextLesson = async () => {
-  await addXPToUser(10);
-  const currentIndex = lessons.findIndex(lesson => lesson._id === activeTab);
-  const nextLesson = lessons[currentIndex + 1];
-  if (nextLesson) {
-    setActiveTab(nextLesson._id);
-  } else {
-    setShowCompletionModal(true);
-  }
+    await addXPToUser(10);
+    const currentIndex = lessons.findIndex(lesson => lesson._id === activeTab);
+    const nextLesson = lessons[currentIndex + 1];
+    
+    if (nextLesson) {
+        setActiveTab(nextLesson._id);
+    } else {
+        try {
+            const response = await fetch('http://localhost:8001/api/english/complete-course', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({ courseID: id }),
+            });
+
+            if (response.ok) {
+                setShowCompletionModal(true);
+            } else {
+                console.error('Failed to mark course as completed');
+            }
+        } catch (error) {
+            console.error('Error marking course as completed:', error);
+        }
+    }
 };
 
   const currentIndex = lessons.findIndex(lesson => lesson._id === activeTab);
