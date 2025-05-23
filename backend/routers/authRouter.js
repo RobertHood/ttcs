@@ -32,6 +32,7 @@ router.patch('/verify-forgot-password-code', authController.verifyForgotPassword
 router.delete('/delete-user',  authController.deleteUser);
 router.get('/profile', verifyUser, authController.getProfile);
 router.patch('/profile/update', verifyUser, authController.updateProfile);
+router.get('/login-activity', verifyUser, authController.getLoginActivity);
 
 router.post('/profile/avatar', verifyUser, upload.single('avatar'), (req, res) => {
   if (!req.file) return res.status(400).json({ status: 'fail', message: 'No file uploaded' });

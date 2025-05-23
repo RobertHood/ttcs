@@ -107,6 +107,12 @@ exports.login = async (req, res) => {
             message: "User logged in successfully",
             token
         });
+
+        await User.findByIdAndUpdate(existingUser._id, {
+            $addToSet: {
+            loginActivity: today
+        }
+        }, { new: true });
     }catch(error) {
         console.error(error);
     }
@@ -429,6 +435,19 @@ exports.updateProfile = async (req, res) => {
             return res.status(404).json({ status: 'fail', message: 'User not found' });
         }
         res.json({ status: 'success', data: user });
+    } catch (error) {
+        res.status(500).json({ status: 'fail', message: 'Server error' });
+    }
+};
+
+exports.getLoginActivity = async (req, res) => {
+    try {
+        const { userID } = req.user;
+        const user = await User.findById(userID).select('loginActivity');
+        if (!user) {
+            return res.status(404).json({ status: 'fail', message: 'User not found' });
+        }
+        res.json({ status: 'success', data: user.loginActivity });
     } catch (error) {
         res.status(500).json({ status: 'fail', message: 'Server error' });
     }

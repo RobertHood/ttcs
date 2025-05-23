@@ -177,7 +177,6 @@ export default function PronunciationPractice() {
   };
 
   const currentQuestion = questions[currentQuestionIndex];
-
   return (
     <Box sx={{ maxWidth: 800, mx: 'auto' }}>
       <Typography variant="h5" sx={{ mb: 4 }}>
@@ -187,7 +186,7 @@ export default function PronunciationPractice() {
       <Typography variant="body1" sx={{ mb: 2 }}>
         Read aloud the sentence below:
       </Typography>
-
+      
       {currentQuestion ? (
         <Box sx={{ mb: 4, p: 2, bgcolor: '#f0f0f0', borderRadius: 2 }}>
           {currentQuestion.audio && (
