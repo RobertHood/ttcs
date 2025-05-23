@@ -11,4 +11,8 @@ router.get('/user-by-id', verifyUser, userController.getUserById);
 
 router.delete('/delete-user', verifyUser, userController.deleteUser);
 router.put('/update-user',verifyUser, userController.updateUser);
+
+
+router.post('/add-xp', verifyUser, userController.addXP);
+
 module.exports = router;
