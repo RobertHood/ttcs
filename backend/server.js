@@ -30,8 +30,10 @@ mongoose.connect(process.env.MONGO_URI).then(() => {
 app.use(express.json());
 
 app.use(cors({
-  origin: 'http://localhost:5173',
-  credentials: true
+  origin: 'http://localhost:5173', // Cổng của frontend
+  methods: ['GET'],
+  allowedHeaders: ['Content-Type', 'Range'], // Cho phép Range header
+  exposedHeaders: ['Content-Range', 'Accept-Ranges']
 }));
 
 
@@ -44,8 +46,12 @@ const corsOptions = {
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
 };
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+});
 
-app.use('/uploads', cors(corsOptions), express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api/auth', authRouter);
 app.use('/api/ielts', ieltsRouter);
@@ -54,6 +60,8 @@ app.use('/api/user', userRouter);
 app.use('/api/categories', categoryRouter);
 app.use('/api/courses', courseRouter);
 app.use('/api/dashboard', dashboardRouter);
+
+
 
 app.listen(process.env.PORT, () => {
     console.log(`Server is running on port ${process.env.PORT}`);
