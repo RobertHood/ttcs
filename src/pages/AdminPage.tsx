@@ -39,6 +39,8 @@ import {
   MenuItem,
   Card,
   CardContent,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import {
@@ -57,11 +59,13 @@ import {
   Person,
   MenuBook,
   Class,
-  Home
+  Book,  Home
+
 } from '@mui/icons-material';
 import { categoryService, type Category } from '../config/categoryService';
 import { courseService, type Course } from '../config/courseService';
 import { userService, type User } from '../config/userService';
+import { lessonService, type Lesson } from '../config/lessonService';
 import RoadmapEditor from '../components/RoadmapEditor';
 
 const drawerWidth = 240;
@@ -76,6 +80,7 @@ export default function AdminPage() {
   const menuItems = [
     { text: 'Dashboard', icon: <Dashboard />, view: 'dashboard' },
     { text: 'Người dùng', icon: <People />, view: 'users' },
+    { text: 'Bài học', icon: <Book />, view: 'lessons' },
     { text: 'Khóa học', icon: <LibraryBooks />, view: 'courses' },
     { text: 'Danh mục', icon: <CategoryIcon />, view: 'categories' },
     { text: 'Cài đặt', icon: <Settings />, view: 'settings' },
@@ -94,6 +99,8 @@ export default function AdminPage() {
         return <DashboardView />;
       case 'users':
         return <UsersView />;
+      case 'lessons':
+        return <LessonsView />;
       case 'courses':
         return <CoursesView />;
       case 'categories':
@@ -664,6 +671,523 @@ const UsersView = () => {
   );
 };
 
+const LessonsView = () => {
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [selectedLessonId, setSelectedLessonId] = useState('');
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    course: '',
+    title: '',
+    theory: '',
+    category: 'Grammar',
+    exercise: [{ question: '', answers: ['', '', '', ''], correctAnswer: '' }] as Array<{
+      question: string;
+      answers: string[];
+      correctAnswer: string;
+    }>
+  });
+  const [exerciseTab, setExerciseTab] = useState(0);
+  
+  useEffect(() => {
+    fetchLessons();
+    fetchCourses();
+  }, []);
+  
+  const fetchLessons = async () => {
+    setLoading(true);
+    try {
+      const response = await lessonService.getAllLessons();
+      if (response.success && response.data) {
+        setLessons(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching lessons:', error);
+      showSnackbar('Failed to load lessons', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const fetchCourses = async () => {
+    try {
+      const response = await courseService.getAllCourses();
+      if (response.success && response.data) {
+        setCourses(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    }
+  };
+  
+  const resetForm = () => {
+    setFormData({
+      course: '',
+      title: '',
+      theory: '',
+      category: 'Grammar',
+      exercise: [{ question: '', answers: ['', '', '', ''], correctAnswer: '' }]
+    });
+    setAudioFile(null);
+    setExerciseTab(0);
+    setSelectedLesson(null);
+    setIsEditing(false);
+  };
+  
+  const handleOpenCreateDialog = () => {
+    resetForm();
+    setOpenDialog(true);
+  };
+  
+  const handleOpenEditDialog = (lesson: Lesson) => {
+    setIsEditing(true);
+    setSelectedLesson(lesson);
+    
+    // Get course ID whether it's a string or object
+    const courseId = typeof lesson.course === 'string' ? lesson.course : lesson.course._id;
+    
+    setFormData({
+      course: courseId,
+      title: lesson.title,
+      theory: lesson.theory,
+      category: lesson.category,
+      exercise: lesson.exercise.length > 0 ? lesson.exercise : [{ question: '', answers: ['', '', '', ''], correctAnswer: '' }]
+    });
+    
+    setOpenDialog(true);
+  };
+  
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      setAudioFile(event.target.files[0]);
+    }
+  };
+  
+  const handleSubmit = async () => {
+    try {
+      if (!formData.course || !formData.title || !formData.theory || !formData.category) {
+        showSnackbar('Please fill in all required fields', 'error');
+        return;
+      }
+      
+      // Validate exercises
+      const validExercises = formData.exercise.filter(
+        ex => ex.question && ex.answers.some(a => a)
+      );
+      
+      // Ensure correctAnswer is set for each exercise
+      const processedExercises = validExercises.map(ex => ({
+        ...ex,
+        correctAnswer: ex.correctAnswer || ex.answers.find(a => a) || ''
+      }));
+      
+      const lessonData = {
+        ...formData,
+        exercise: processedExercises
+      };
+      
+      let response;
+      
+      if (isEditing && selectedLesson) {
+        response = await lessonService.updateLesson(
+          selectedLesson._id,
+          lessonData as any,
+          audioFile || undefined
+        );
+      } else {
+        response = await lessonService.createLesson(lessonData as any, audioFile || undefined);
+      }
+      
+      if (response.success) {
+        showSnackbar(
+          isEditing ? 'Lesson updated successfully' : 'Lesson created successfully',
+          'success'
+        );
+        setOpenDialog(false);
+        resetForm();
+        fetchLessons();
+      } else {
+        showSnackbar(response.message || 'Operation failed', 'error');
+      }
+    } catch (error: any) {
+      console.error('Error saving lesson:', error);
+      showSnackbar(error.message || 'An error occurred', 'error');
+    }
+  };
+  
+  const openDeleteConfirm = (id: string) => {
+    setSelectedLessonId(id);
+    setOpenDeleteDialog(true);
+  };
+  
+  const handleDeleteLesson = async () => {
+    try {
+      const response = await lessonService.deleteLesson(selectedLessonId);
+      if (response.success) {
+        showSnackbar('Lesson deleted successfully', 'success');
+        fetchLessons();
+      } else {
+        showSnackbar(response.message || 'Failed to delete lesson', 'error');
+      }
+    } catch (error: any) {
+      console.error('Error deleting lesson:', error);
+      showSnackbar(error.message || 'An error occurred', 'error');
+    } finally {
+      setOpenDeleteDialog(false);
+    }
+  };
+  
+  const showSnackbar = (message: string, severity: 'success' | 'error') => {
+    setSnackbar({ open: true, message, severity });
+  };
+  
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+  
+  const getCourseName = (courseId: string) => {
+    // First check if courseId is already a populated course object
+    if (typeof courseId === 'object' && courseId !== null && 'title' in courseId) {
+      return courseId.title;
+    }
+    
+    // Otherwise, search for the course by ID
+    const course = courses.find(c => c._id === courseId);
+    return course ? course.title : 'Unknown Course';
+  };
+  
+  const handleAddExercise = () => {
+    setFormData(prev => ({
+      ...prev,
+      exercise: [
+        ...prev.exercise,
+        { question: '', answers: ['', '', '', ''], correctAnswer: '' }
+      ]
+    }));
+    setExerciseTab(formData.exercise.length);
+  };
+  
+  const handleRemoveExercise = (index: number) => {
+    if (formData.exercise.length > 1) {
+      const updatedExercises = [...formData.exercise];
+      updatedExercises.splice(index, 1);
+      setFormData(prev => ({ ...prev, exercise: updatedExercises }));
+      setExerciseTab(Math.min(exerciseTab, updatedExercises.length - 1));
+    }
+  };
+  
+  const handleChangeExercise = (index: number, field: string, value: string) => {
+    const updatedExercises = [...formData.exercise];
+    (updatedExercises[index] as any)[field] = value;
+    
+    setFormData(prev => ({
+      ...prev,
+      exercise: updatedExercises
+    }));
+  };
+  
+  const handleChangeAnswer = (exerciseIndex: number, answerIndex: number, value: string) => {
+    const updatedExercises = [...formData.exercise];
+    updatedExercises[exerciseIndex].answers[answerIndex] = value;
+    
+    // If this is the first answer and no correct answer is set, make it the correct answer
+    if (answerIndex === 0 && !updatedExercises[exerciseIndex].correctAnswer) {
+      updatedExercises[exerciseIndex].correctAnswer = value;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      exercise: updatedExercises
+    }));
+  };
+  
+  const handleSetCorrectAnswer = (exerciseIndex: number, answerIndex: number) => {
+    const updatedExercises = [...formData.exercise];
+    updatedExercises[exerciseIndex].correctAnswer = updatedExercises[exerciseIndex].answers[answerIndex];
+    
+    setFormData(prev => ({
+      ...prev,
+      exercise: updatedExercises
+    }));
+  };
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  const handleSelectChange = (e: any) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  return (
+    <Box sx={{ width: '100%' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4">Quản lý bài học</Typography>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          startIcon={<Add />}
+          onClick={handleOpenCreateDialog}
+        >
+          Thêm bài học
+        </Button>
+      </Box>
+      
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <TableContainer component={Paper}>
+          <Table sx={{ minWidth: 650 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell>STT</TableCell>
+                <TableCell>Tiêu đề</TableCell>
+                <TableCell>Khóa học</TableCell>
+                <TableCell>Loại bài học</TableCell>
+                <TableCell>Số câu hỏi</TableCell>
+                <TableCell align="right">Thao tác</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {lessons.map((lesson, index) => (
+                <TableRow key={lesson._id}>
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell>{lesson.title}</TableCell>
+                  <TableCell>{getCourseName(lesson.course as any)}</TableCell>
+                  <TableCell>{lesson.category}</TableCell>
+                  <TableCell>{lesson.exercise ? lesson.exercise.length : 0}</TableCell>
+                  <TableCell align="right">
+                    <IconButton onClick={() => handleOpenEditDialog(lesson)}>
+                      <Edit />
+                    </IconButton>
+                    <IconButton onClick={() => openDeleteConfirm(lesson._id)}>
+                      <Delete />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {lessons.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} align="center">
+                    Không có bài học nào
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+      
+      {/* Create/Edit Dialog */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
+        <DialogTitle>{isEditing ? 'Cập nhật bài học' : 'Thêm bài học mới'}</DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ mb: 2 }}>
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel id="course-select-label">Khóa học</InputLabel>
+              <Select
+                labelId="course-select-label"
+                id="course-select"
+                name="course"
+                value={formData.course}
+                onChange={handleSelectChange}
+                label="Khóa học"
+                required
+              >
+                {courses.map((course) => (
+                  <MenuItem key={course._id} value={course._id}>
+                    {course.title}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            
+            <TextField
+              label="Tiêu đề bài học"
+              name="title"
+              value={formData.title}
+              onChange={handleInputChange}
+              fullWidth
+              required
+              sx={{ mb: 2 }}
+            />
+            
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel id="category-select-label">Loại bài học</InputLabel>
+              <Select
+                labelId="category-select-label"
+                id="category-select"
+                name="category"
+                value={formData.category}
+                onChange={handleSelectChange}
+                label="Loại bài học"
+                required
+              >
+                {['Listening', 'Speaking', 'Writing', 'Reading', 'Grammar', 'Vocabulary'].map((cat) => (
+                  <MenuItem key={cat} value={cat}>
+                    {cat}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            
+            <TextField
+              label="Nội dung bài học"
+              name="theory"
+              value={formData.theory}
+              onChange={handleInputChange}
+              fullWidth
+              required
+              multiline
+              rows={4}
+              sx={{ mb: 2 }}
+            />
+            
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Audio (Tùy chọn)
+              </Typography>
+              <input
+                accept="audio/*"
+                id="audio-file"
+                type="file"
+                onChange={handleFileChange}
+                style={{ display: 'block', marginTop: 8 }}
+              />
+            </Box>
+            
+            <Divider sx={{ my: 3 }} />
+            
+            <Typography variant="h6" gutterBottom>
+              Câu hỏi & Bài tập
+            </Typography>
+            
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+              <Tabs
+                value={exerciseTab}
+                onChange={(_, newValue) => setExerciseTab(newValue)}
+                variant="scrollable"
+                scrollButtons="auto"
+              >
+                {formData.exercise.map((_, index) => (
+                  <Tab key={index} label={`Câu hỏi ${index + 1}`} />
+                ))}
+              </Tabs>
+            </Box>
+            
+            {formData.exercise.map((ex, exIndex) => (
+              <Box key={exIndex} sx={{ display: exerciseTab === exIndex ? 'block' : 'none' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                  <Typography variant="subtitle1">Câu hỏi {exIndex + 1}</Typography>
+                  <Button 
+                    variant="outlined" 
+                    color="error" 
+                    size="small"
+                    onClick={() => handleRemoveExercise(exIndex)}
+                    disabled={formData.exercise.length <= 1}
+                  >
+                    Xóa
+                  </Button>
+                </Box>
+                
+                <TextField
+                  label="Câu hỏi"
+                  value={ex.question}
+                  onChange={(e) => handleChangeExercise(exIndex, 'question', e.target.value)}
+                  fullWidth
+                  required
+                  sx={{ mb: 2 }}
+                />
+                
+                {ex.answers.map((answer, aIdx) => (
+                  <Box key={aIdx} sx={{ display: 'flex', mb: 2, alignItems: 'center' }}>
+                    <TextField
+                      label={`Đáp án ${aIdx + 1}`}
+                      value={answer}
+                      onChange={(e) => handleChangeAnswer(exIndex, aIdx, e.target.value)}
+                      fullWidth
+                      required={aIdx === 0}
+                      sx={{ mr: 1 }}
+                    />
+                    <FormControl>
+                      <Button
+                        variant={ex.correctAnswer === answer && answer !== '' ? "contained" : "outlined"}
+                        color="primary"
+                        onClick={() => handleSetCorrectAnswer(exIndex, aIdx)}
+                        disabled={!answer}
+                        size="small"
+                      >
+                        {ex.correctAnswer === answer && answer !== '' ? "Đáp án đúng" : "Đặt đáp án đúng"}
+                      </Button>
+                    </FormControl>
+                  </Box>
+                ))}
+              </Box>
+            ))}
+            
+            <Box sx={{ mt: 2 }}>
+              <Button 
+                variant="outlined" 
+                startIcon={<Add />} 
+                onClick={handleAddExercise}
+              >
+                Thêm câu hỏi
+              </Button>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)}>Hủy</Button>
+          <Button onClick={handleSubmit} variant="contained" color="primary">
+            {isEditing ? 'Cập nhật' : 'Tạo'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
+        <DialogTitle>Xác nhận xóa</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Bạn có chắc chắn muốn xóa bài học này? Hành động này không thể hoàn tác.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDeleteDialog(false)}>Hủy</Button>
+          <Button onClick={handleDeleteLesson} color="error" variant="contained">
+            Xóa
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Snackbar for notifications */}
+      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
+};
+
 const CoursesView = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -696,8 +1220,10 @@ const CoursesView = () => {
   const fetchCourses = async () => {
     try {
       setLoading(true);
-      const data = await courseService.getAllCourses();
-      setCourses(data);
+      const response = await courseService.getAllCourses();
+      if (response.success && response.data) {
+        setCourses(response.data);
+      }
     } catch (error: any) {
       console.error('Error loading courses:', error);
       showSnackbar(error.message || 'Không thể tải danh sách khóa học', 'error');
